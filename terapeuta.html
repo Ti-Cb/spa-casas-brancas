@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>SPA — Área do Terapeuta</title>
+    <meta name="theme-color" content="#51604a">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root { --sage:#6f7d63; --sage-d:#51604a; --sand:#b9a17c; --ink:#34362f; }
+        body { font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif; color:#3a3c34; padding:18px 16px 100px; min-height:100vh; position:relative; }
+        body::before { content:''; position:fixed; inset:0; z-index:-2; background:#eef0e8; }
+        body::after { content:''; position:fixed; inset:0; z-index:-1; background:linear-gradient(160deg,#f4f1e8,#e7ebe0); }
+        .wrap { max-width:580px; margin:0 auto; }
+        .topo { background:linear-gradient(135deg,var(--sage),var(--sage-d)); color:#fff; border-radius:18px; padding:20px 22px; display:flex; align-items:center; gap:14px; margin-bottom:16px; box-shadow:0 10px 28px rgba(60,70,50,0.16); }
+        .avatar { width:56px; height:56px; border-radius:50%; flex:0 0 auto; background:rgba(255,255,255,0.18); display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:600; overflow:hidden; }
+        .avatar img { width:100%; height:100%; object-fit:cover; }
+        .topo h1 { font-size:1.3rem; font-weight:400; font-family:'Georgia',serif; font-style:italic; }
+        .topo .sub { font-size:0.76rem; color:rgba(255,255,255,0.85); margin-top:3px; }
+        .tabs { display:flex; gap:8px; margin-bottom:14px; }
+        .tab-btn { flex:1; text-align:center; background:#fff; border:1px solid #d8cbb0; padding:10px 6px; border-radius:40px; font-weight:500; cursor:pointer; color:#8a7a55; font-size:0.82rem; }
+        .tab-btn.on { background:var(--sage); color:#fff; border-color:var(--sage); }
+        .tabc { display:none; } .tabc.on { display:block; }
+        .hint { font-size:0.8rem; color:#6b7560; background:#f3f6ee; border-left:3px solid var(--sand); border-radius:10px; padding:11px 14px; margin-bottom:14px; }
+        .dia { background:#fff; border:1px solid #e3e6da; border-radius:14px; padding:14px 16px; margin-bottom:10px; }
+        .dia .dt { font-weight:600; color:var(--sage-d); margin-bottom:10px; text-transform:capitalize; font-size:0.92rem; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+        .pl-btn { font-size:0.72rem; font-weight:600; padding:5px 12px; border-radius:40px; border:1px solid #d8cbb0; color:#9c8763; background:#fff; cursor:pointer; white-space:nowrap; text-transform:none; }
+        .pl-btn.on { background:var(--sand); border-color:var(--sand); color:#fff; }
+        .chips { display:flex; gap:8px; flex-wrap:wrap; }
+        .chip { border:1px solid #d8cbb0; border-radius:40px; padding:8px 16px; font-size:0.85rem; cursor:pointer; color:#8a7a55; background:#fff; user-select:none; }
+        .chip.on { background:var(--sage); border-color:var(--sage); color:#fff; }
+        .chip.lock { cursor:default; }
+        .ag { background:#fff; border:1px solid #e3e6da; border-radius:14px; padding:14px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+        .ag .h { font-weight:700; color:var(--sage-d); font-size:1.05rem; }
+        .ag .n { font-weight:600; font-size:0.9rem; } .ag .s { font-size:0.76rem; color:#8a937e; }
+        .ag .vf { background:#eef2e6; color:var(--sage-d); border:1px solid #d8e0cf; border-radius:40px; padding:8px 14px; font-size:0.78rem; cursor:pointer; font-weight:600; white-space:nowrap; }
+        .tag { padding:2px 9px; border-radius:40px; font-size:0.68rem; font-weight:600; }
+        .periodos { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+        .pbtn { background:#fff; border:1px solid #d8cbb0; padding:7px 14px; border-radius:40px; font-size:0.8rem; cursor:pointer; color:#8a7a55; }
+        .pbtn.on { background:var(--sage); color:#fff; border-color:var(--sage); }
+        .resumo-com { background:linear-gradient(135deg,var(--sage),var(--sage-d)); color:#fff; border-radius:16px; padding:20px; margin-bottom:14px; }
+        .resumo-com .v { font-size:2rem; font-weight:700; }
+        table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; }
+        th,td { padding:9px 11px; text-align:left; border-bottom:1px solid #eef0e8; font-size:0.82rem; }
+        th { background:#f3f6ee; color:var(--sage-d); font-weight:600; }
+        .data-pick { padding:9px 12px; border:1px solid #d8cbb0; border-radius:10px; font-size:0.9rem; margin-bottom:14px; width:100%; max-width:220px; }
+        .barra { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid #e3e6da; padding:12px 16px; box-shadow:0 -4px 20px rgba(60,70,50,0.08); display:none; }
+        .barra-in { max-width:580px; margin:0 auto; display:flex; gap:10px; align-items:center; justify-content:space-between; }
+        .salvar { background:linear-gradient(135deg,var(--sage),var(--sage-d)); color:#fff; border:none; border-radius:40px; padding:13px 28px; font-weight:600; font-size:0.95rem; cursor:pointer; }
+        .st { font-size:0.78rem; color:#8a937e; }
+        .vazio { color:#9aa18d; font-size:0.85rem; padding:10px 0; }
+        .gate { position:fixed; inset:0; z-index:9999; background:linear-gradient(135deg,var(--sage),var(--sage-d)); display:flex; align-items:center; justify-content:center; }
+        .gate-card { background:#fff; padding:32px 28px; border-radius:18px; max-width:320px; width:90%; text-align:center; box-shadow:0 18px 50px rgba(0,0,0,0.35); }
+        .gate-card input { width:100%; padding:12px 14px; border:1px solid #dde0d4; border-radius:10px; font-size:1.1rem; text-align:center; letter-spacing:4px; margin-bottom:12px; }
+        .gate-card button { width:100%; padding:12px; background:linear-gradient(135deg,var(--sage),var(--sage-d)); color:#fff; border:none; border-radius:40px; font-weight:600; cursor:pointer; }
+        .ov { position:fixed; inset:0; background:rgba(40,50,35,0.55); display:none; align-items:center; justify-content:center; z-index:200; padding:18px; }
+        .ov.show { display:flex; }
+        .ov-card { background:#fff; border-radius:18px; padding:24px; max-width:520px; width:100%; max-height:88vh; overflow-y:auto; }
+        .ov-card h3 { color:var(--sage-d); margin-bottom:12px; }
+        .al { padding:6px 0; border-bottom:1px solid #eef0e8; font-size:0.85rem; display:flex; justify-content:space-between; gap:12px; }
+        .al .r { color:#8a937e; } .al .v { font-weight:500; text-align:right; }
+        .ov-card .fechar { margin-top:16px; width:100%; padding:12px; background:linear-gradient(135deg,var(--sage),var(--sage-d)); color:#fff; border:none; border-radius:40px; font-weight:600; cursor:pointer; }
+    </style>
+</head>
+<body>
+<div class="gate" id="gate">
+    <div class="gate-card">
+        <div style="font-family:'Georgia',serif; font-style:italic; color:var(--sage-d); font-size:1.4rem;">SPA Casas Brancas</div>
+        <div id="gateNome" style="font-size:0.85rem; color:#8a937e; margin:4px 0 18px;">Área do terapeuta</div>
+        <input type="password" id="pin" inputmode="numeric" placeholder="PIN" autocomplete="off" data-lpignore="true">
+        <button id="pinBtn">Entrar</button>
+        <div id="pinErro" style="color:#b85c5a; font-size:0.8rem; margin-top:10px; display:none;">PIN incorreto</div>
+    </div>
+</div>
+
+<div class="wrap" id="app" style="display:none;">
+    <div class="topo">
+        <div class="avatar" id="avatar"></div>
+        <div><h1 id="ola">Olá!</h1><div class="sub" id="subTopo">Sua área no SPA</div></div>
+    </div>
+    <div class="tabs">
+        <div class="tab-btn on" data-t="disp">Disponibilidade</div>
+        <div class="tab-btn" data-t="agend">Agendamentos</div>
+        <div class="tab-btn" data-t="com">Comissões</div>
+    </div>
+
+    <div class="tabc on" id="tab-disp">
+        <div class="hint">Toque nos horários em que está <strong>disponível</strong> em cada dia e depois em <strong>Salvar</strong>.</div>
+        <div id="dias"></div>
+    </div>
+
+    <div class="tabc" id="tab-agend">
+        <input type="date" id="agData" class="data-pick">
+        <div id="agLista"></div>
+    </div>
+
+    <div class="tabc" id="tab-com">
+        <div class="periodos">
+            <div class="pbtn on" data-p="mesAtual">Este mês</div>
+            <div class="pbtn" data-p="mesAnterior">Mês passado</div>
+            <div class="pbtn" data-p="todos">Todos</div>
+        </div>
+        <div class="resumo-com"><div style="font-size:0.85rem;opacity:0.9;">Comissão no período</div><div class="v" id="comTotal">R$ 0</div><div id="comQtd" style="font-size:0.8rem;opacity:0.9;margin-top:4px;"></div></div>
+        <div id="comLista"></div>
+    </div>
+</div>
+
+<div class="barra" id="barra"><div class="barra-in"><span class="st" id="status">—</span><button class="salvar" id="salvarBtn">Salvar disponibilidade</button></div></div>
+
+<div class="ov" id="fichaOv"><div class="ov-card"><h3>Ficha do hóspede</h3><div id="fichaBody"></div><button class="fechar" id="fichaFechar">Fechar</button></div></div>
+
+<script>
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxOhd-rs25ko1Xkd46A1EKWM7npWBg3rfKigW41XY6Kvdi9wvXCu2PjsVV5w5RNhole/exec";
+    const DIAS_A_FRENTE = 14;
+    const SLOTS = ["14:30","16:00","17:30","19:00"];
+    const TERAPEUTAS = {
+        "Tasso":{pin:"1111"}, "Jéssica":{pin:"2222"}, "Dani":{pin:"3333"}, "Vanina":{pin:"4444"}, "Bahia":{pin:"5555"}
+    };
+    // Comissão do massoterapeuta = 28% do valor da massagem (conforme a planilha do SPA).
+    const PCT_COMISSAO = 0.28;
+    const PLANTAO_VALOR = 150;
+    function comissionavel(servico){ let s=(servico||'').toString().toLowerCase().trim(); if(s==='yoga') return false; return !['reiki','pilates','gds','osteo'].some(x=>s.indexOf(x)>-1); }
+    function comissaoDe(t){ return comissionavel(t["Servico"]) ? Math.round((parseFloat(t["ValorTotal"])||0)*PCT_COMISSAO) : 0; }
+
+    const params=new URLSearchParams(location.search);
+    let nome=params.get('t')||'';
+    if(nome){ let k=Object.keys(TERAPEUTAS).find(n=>n.toLowerCase().normalize('NFD').replace(/[^a-z]/gi,'')===nome.toLowerCase().normalize('NFD').replace(/[^a-z]/gi,'')); if(k)nome=k; }
+    const cfg=TERAPEUTAS[nome];
+
+    function slug(n){ return n.toLowerCase().normalize('NFD').replace(/[^a-z]/gi,''); }
+    function keyData(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    function fmtData(v){ if(!v)return''; let m=v.toString().match(/(\d{4})-(\d{2})-(\d{2})/); return m?(m[3]+'/'+m[2]+'/'+m[1]):v; }
+    function brl(v){ return "R$ "+(Math.round(parseFloat(v)||0)).toLocaleString('pt-BR'); }
+    function hora(t){ let h=(t["Horario"]||'').toString(); let m=h.match(/(\d{1,2}):(\d{2})/); return m?(m[1].padStart(2,'0')+':'+m[2]):(h||'-'); }
+    function getStatus(t){ return (t["Status"]||'active').toString().toLowerCase()||'active'; }
+    const SEMANA=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+    const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+    if(!cfg){
+        document.getElementById('gateNome').innerText='Selecione o seu nome:';
+        document.getElementById('pin').style.display='none'; document.getElementById('pinBtn').style.display='none'; document.getElementById('pinErro').style.display='none';
+        var card=document.querySelector('.gate-card'); var div=document.createElement('div');
+        div.innerHTML=Object.keys(TERAPEUTAS).map(function(n){ return '<button class="escolher" data-n="'+n+'" style="width:100%;padding:11px;margin-bottom:8px;background:#f3f6ee;color:#51604a;border:1px solid #d8e0cf;border-radius:40px;font-weight:600;cursor:pointer;">'+n+'</button>'; }).join('');
+        card.appendChild(div);
+        card.querySelectorAll('.escolher').forEach(function(b){ b.addEventListener('click',function(){ location.search='?t='+encodeURIComponent(b.getAttribute('data-n')); }); });
+    } else {
+        document.getElementById('gateNome').innerText='Área de '+nome;
+        const pb=document.getElementById('pinBtn'), pi=document.getElementById('pin');
+        function tp(){ if(pi.value===cfg.pin){ document.getElementById('gate').style.display='none'; iniciar(); } else { document.getElementById('pinErro').style.display='block'; pi.value=''; } }
+        pb.addEventListener('click',tp); pi.addEventListener('keydown',e=>{ if(e.key==='Enter')tp(); }); pi.focus();
+    }
+
+    let disponibilidade={}, reservas=[], plantoes=[];
+
+    function iniciar(){
+        document.getElementById('app').style.display='block';
+        document.getElementById('ola').innerText='Olá, '+nome+'!';
+        const av=document.getElementById('avatar'); const img=new Image();
+        img.onload=()=>{ av.innerHTML=''; av.appendChild(img); }; img.onerror=()=>{ av.textContent=nome.charAt(0).toUpperCase(); };
+        img.src='terapeuta-'+slug(nome)+'.jpg';
+        document.getElementById('agData').value=keyData(new Date());
+        document.getElementById('barra').style.display='block'; // aba disp inicia ativa
+        carregarTudo();
+    }
+
+    async function carregarTudo(){
+        if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){
+            try{ const r=await fetch(WEBAPP_URL+'?action=disponibilidade&t='+encodeURIComponent(nome)); const d=await r.json();
+                if(Array.isArray(d)) d.forEach(x=>{ let k=(x.Data||'').toString().slice(0,10); if(!k)return; disponibilidade[k]=(x.Horarios||'').toString().split(',').map(s=>s.trim()).filter(Boolean); if((x.Plantao||'').toString().toLowerCase()==='sim'||x.Plantao===true) plantoes.push(k); }); }catch(e){}
+            try{ const r2=await fetch(WEBAPP_URL); const d2=await r2.json(); reservas=(Array.isArray(d2)?d2:[]).filter(t=>(t["Terapeuta"]||'')===nome); }catch(e){}
+        }
+        renderDias(); renderAgend(); renderCom('mesAtual');
+    }
+
+    // ===== DISPONIBILIDADE =====
+    function renderDias(){
+        let html='', hoje=new Date(); hoje.setHours(0,0,0,0);
+        for(let i=0;i<DIAS_A_FRENTE;i++){
+            let d=new Date(hoje); d.setDate(d.getDate()+i); let k=keyData(d);
+            let plant=plantoes.indexOf(k)>-1;
+            let sel=plant?SLOTS.slice():(disponibilidade[k]||[]);
+            let chips=SLOTS.map(s=>`<div class="chip ${sel.indexOf(s)>-1?'on':''} ${plant?'lock':''}" data-d="${k}" data-s="${s}">${s}</div>`).join('');
+            let rot=(i===0?'Hoje':(i===1?'Amanhã':SEMANA[d.getDay()]))+', '+d.getDate()+' '+MES[d.getMonth()];
+            html+=`<div class="dia" data-d="${k}"><div class="dt"><span>${rot}</span><span class="pl-btn ${plant?'on':''}">★ Plantão</span></div><div class="chips">${chips}</div></div>`;
+        }
+        document.getElementById('dias').innerHTML=html;
+        document.querySelectorAll('#dias .chip').forEach(c=>c.addEventListener('click',()=>{ if(c.classList.contains('lock'))return; c.classList.toggle('on'); marcado(); }));
+        document.querySelectorAll('#dias .pl-btn').forEach(p=>p.addEventListener('click',()=>togglePlantao(p)));
+    }
+    function marcado(){ document.getElementById('status').innerText='Alterações não salvas'; }
+    function togglePlantao(p){
+        let on=!p.classList.contains('on'); p.classList.toggle('on',on);
+        let dia=p.closest('.dia');
+        dia.querySelectorAll('.chip').forEach(c=>{ if(on){ c.classList.add('on'); c.classList.add('lock'); } else { c.classList.remove('lock'); } });
+        marcado();
+    }
+    function salvar(){
+        let dias={}, pls=[];
+        document.querySelectorAll('#dias .dia').forEach(dv=>{
+            let k=dv.getAttribute('data-d');
+            let plant=dv.querySelector('.pl-btn').classList.contains('on');
+            if(plant){ dias[k]=SLOTS.slice(); pls.push(k); }
+            else { dias[k]=[]; dv.querySelectorAll('.chip').forEach(c=>{ if(c.classList.contains('on'))dias[k].push(c.getAttribute('data-s')); }); }
+        });
+        disponibilidade=dias; plantoes=pls; document.getElementById('status').innerText='Salvando...';
+        if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){ try{ fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'setDisponibilidade',terapeuta:nome,dias:dias,plantoes:pls})}); }catch(e){} setTimeout(()=>document.getElementById('status').innerText='Salvo ✓',900); }
+        else document.getElementById('status').innerText='Salvo (demonstração)';
+        renderCom(document.querySelector('.pbtn.on')?document.querySelector('.pbtn.on').getAttribute('data-p'):'mesAtual');
+    }
+    document.getElementById('salvarBtn').addEventListener('click',salvar);
+
+    // ===== AGENDAMENTOS =====
+    function statusInfo(t){ let s=getStatus(t);
+        if(s==='completed')return{l:'Finalizado',c:'color:#2f7d8c;background:#e6f0f2'};
+        if(s==='cancelled')return{l:'Cancelado',c:'color:#b85c5a;background:#faecec'};
+        if(s==='confirmed'||s==='active')return{l:'Confirmado',c:'color:#51604a;background:#eef3e6'};
+        return{l:'Aguardando ficha',c:'color:#8a6d1b;background:#fff3cd'};
+    }
+    function renderAgend(){
+        let dia=document.getElementById('agData').value;
+        let lista=reservas.filter(t=>getStatus(t)!=='cancelled' && (t["Data"]||'').toString().slice(0,10)===dia).sort((a,b)=>hora(a).localeCompare(hora(b)));
+        if(!lista.length){ document.getElementById('agLista').innerHTML='<div class="vazio">Nenhum atendimento neste dia.</div>'; return; }
+        document.getElementById('agLista').innerHTML=lista.map(t=>{ let si=statusInfo(t); let jt=JSON.stringify(t).replace(/"/g,'&quot;');
+            return `<div class="ag"><div><div class="h">${hora(t)}</div><div class="n">${t["Nome"]||'-'} <span class="tag" style="${si.c}">${si.l}</span></div><div class="s">${t["Servico"]||'-'} · Quarto ${t["Quarto"]||'-'}</div></div><button class="vf" onclick='verFicha(${jt})'>Ver ficha</button></div>`;
+        }).join('');
+    }
+    document.getElementById('agData').addEventListener('change',renderAgend);
+
+    function verFicha(t){
+        let a={}; try{ a=JSON.parse(t["Anamnese"]||'{}'); }catch(e){}
+        let rot={tipoFicha:'Tipo',foco:'Foco',evitar:'Evitar',homeopatico:'Homeopático',protese:'Prótese/metal',psiquiatrico:'Acomp. psiquiátrico',medicacao:'Medicação',condicoes:'Condições',sinergia:'Sinergia',calcado:'Calçado',bebida:'Bebida',lentes:'Lentes de contato',acido:'Ácido na pele',anticoncepcional:'Anticoncepcional',sol:'Toma sol'};
+        let linhas=Object.keys(a).filter(k=>a[k]!=='' && a[k]!=null).map(k=>`<div class="al"><span class="r">${rot[k]||k}</span><span class="v">${a[k]}</span></div>`).join('');
+        document.getElementById('fichaBody').innerHTML=`<div style="margin-bottom:10px;"><b>${t["Nome"]||'-'}</b> · Quarto ${t["Quarto"]||'-'}<br><span style="font-size:0.82rem;color:#8a937e;">${t["Servico"]||'-'} · ${fmtData(t["Data"])} ${hora(t)}</span></div>`+
+            (linhas||'<div style="color:#8a937e;">Ficha ainda não preenchida pelo hóspede.</div>')+
+            (t["Obs"]?`<div class="al"><span class="r">Observações</span><span class="v">${t["Obs"]}</span></div>`:'');
+        document.getElementById('fichaOv').classList.add('show');
+    }
+    document.getElementById('fichaFechar').addEventListener('click',()=>document.getElementById('fichaOv').classList.remove('show'));
+
+    // ===== COMISSÕES =====
+    // Competência 21 -> 20 (igual à planilha do SPA)
+    function janelaComp(offset){
+        let h=new Date(); h.setHours(0,0,0,0);
+        let ini = (h.getDate()>=21) ? new Date(h.getFullYear(),h.getMonth(),21) : new Date(h.getFullYear(),h.getMonth()-1,21);
+        ini.setMonth(ini.getMonth()+offset);
+        let fim=new Date(ini.getFullYear(),ini.getMonth()+1,20,23,59,59);
+        return {ini:ini,fim:fim};
+    }
+    function noPeriodo(t,p){
+        let d=new Date(t["Data"]); if(isNaN(d))return false; d.setHours(12,0,0,0);
+        if(p==='todos')return true;
+        let w=janelaComp(p==='mesAtual'?0:-1);
+        return d>=w.ini && d<=w.fim;
+    }
+    function renderCom(p){
+        document.querySelectorAll('.pbtn').forEach(b=>b.classList.toggle('on',b.getAttribute('data-p')===p));
+        let lista=reservas.filter(t=>getStatus(t)==='completed' && noPeriodo(t,p)).sort((a,b)=>new Date(a["Data"])-new Date(b["Data"]));
+        let totalMass=0;
+        let rows=lista.map(t=>{ let c=comissaoDe(t); totalMass+=c; return `<tr><td>${fmtData(t["Data"])}</td><td>${t["Servico"]||'-'}</td><td>${t["Nome"]||'-'}</td><td style="text-align:right;">${c?brl(c):'—'}</td></tr>`; }).join('');
+        let hojeFim=new Date(); hojeFim.setHours(23,59,59,0);
+        let pdias=plantoes.filter(k=>{ let dt=new Date(k); return !isNaN(dt) && dt<=hojeFim && noPeriodo({Data:k},p); });
+        let comPlant=pdias.length*PLANTAO_VALOR;
+        let plantRow = pdias.length?`<tr><td>${pdias.length}× plantão</td><td>Plantão</td><td>—</td><td style="text-align:right;">${brl(comPlant)}</td></tr>`:'';
+        let total=totalMass+comPlant;
+        document.getElementById('comTotal').innerText=brl(total);
+        document.getElementById('comQtd').innerText=lista.length+' massagem(ns) (28%) · '+pdias.length+' plantão(ões) (R$ 150 cada)';
+        document.getElementById('comLista').innerHTML=`<table><thead><tr><th>Data</th><th>Serviço</th><th>Hóspede</th><th style="text-align:right;">Comissão</th></tr></thead><tbody>${rows}${plantRow}${(!rows&&!plantRow)?'<tr><td colspan=4 class="vazio">Nada no período.</td></tr>':''}</tbody></table>`;
+    }
+    document.querySelectorAll('.pbtn').forEach(b=>b.addEvent

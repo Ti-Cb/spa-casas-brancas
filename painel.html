@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>SPA Casas Brancas — Painel</title>
+    <meta name="theme-color" content="#51604a">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root { --sage:#6f7d63; --sage-d:#51604a; --sand:#b9a17c; --sand-d:#9c8763; --ink:#34362f; }
+        body { font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif; color:#3a3c34; padding:20px; min-height:100vh; position:relative; }
+        body::before { content:''; position:fixed; inset:0; z-index:-2; background:#eef0e8; }
+        body::after { content:''; position:fixed; inset:0; z-index:-1; background:linear-gradient(160deg,#f4f1e8 0%, #e7ebe0 100%); }
+        .container { max-width:1400px; margin:0 auto; }
+        .topo { position:relative; overflow:hidden; border-radius:20px; color:#fff; padding:26px 28px; margin-bottom:20px; background:linear-gradient(135deg,var(--sage),var(--sage-d)); display:flex; align-items:center; justify-content:space-between; gap:18px; }
+        .topo h1 { font-size:1.6rem; font-weight:400; font-family:'Georgia',serif; font-style:italic; }
+        .topo .sub { font-size:0.8rem; color:rgba(255,255,255,0.85); margin-top:4px; }
+        .topo img { height:56px; }
+        .tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+        .tab-btn { background:rgba(255,255,255,0.92); border:1px solid #d8cbb0; padding:10px 20px; border-radius:40px; font-weight:500; cursor:pointer; color:#8a7a55; }
+        .tab-btn.active { background:var(--sage); border-color:var(--sage); color:#fff; }
+        .tab-content { display:none; } .tab-content.active { display:block; }
+        .table-container { background:rgba(255,255,255,0.96); border-radius:16px; padding:20px; overflow-x:auto; margin-bottom:20px; border:1px solid #e3e6da; box-shadow:0 6px 20px rgba(60,70,50,0.06); }
+        .table-container h3 { color:var(--sage-d); font-size:0.95rem; }
+        table { width:100%; border-collapse:collapse; }
+        th,td { padding:10px 12px; text-align:left; border-bottom:1px solid #eef0e8; font-size:0.85rem; vertical-align:top; }
+        th { background:#f3f6ee; font-weight:600; color:var(--sage-d); }
+        .month-group td { background:#eef2e6; font-weight:600; color:var(--sage-d); }
+        .completed-row td { background:#f1f4ec; color:#8a937e; }
+        .cancelled-row td { background:#f8d7da; text-decoration:line-through; color:#721c24; }
+        .header-actions { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:14px; }
+        .last-update { font-size:0.8rem; color:#8a937e; }
+        .btn { border:none; border-radius:40px; cursor:pointer; font-size:0.7rem; padding:6px 10px; margin:1px; font-weight:600; }
+        .btn-main { background:linear-gradient(135deg,var(--sage),var(--sage-d)); color:#fff; padding:10px 18px; font-size:0.85rem; }
+        .btn-wa { background:#25D366; color:#fff; }
+        .btn-edit { background:var(--sand); color:#fff; }
+        .btn-fim { background:#6c757d; color:#fff; }
+        .btn-canc { background:#dc3545; color:#fff; }
+        .btn-ficha { background:#eef2e6; color:var(--sage-d); border:1px solid #d8e0cf; }
+        .filtros-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+        .filtros-bar input,.filtros-bar select { padding:9px 12px; border:1px solid #d8cbb0; border-radius:10px; font-size:0.85rem; background:#fff; }
+        .filtros-bar input.busca { flex:1; min-width:180px; }
+        .tag { padding:3px 10px; border-radius:40px; font-size:0.72rem; font-weight:600; }
+        .periodo-card { background:linear-gradient(135deg,var(--sage),var(--sage-d)); color:#fff; border-radius:16px; padding:24px; margin-bottom:20px; }
+        .periodo-card .v { font-size:2.3rem; font-weight:700; }
+        .periodo-btns { display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; }
+        .periodo-btn { background:rgba(255,255,255,0.2); border:none; padding:8px 16px; border-radius:40px; color:#fff; cursor:pointer; }
+        .periodo-btn.active { background:#fff; color:var(--sage-d); font-weight:600; }
+        .conflito { background:#fff8e6; border:1px solid #e0c060; border-radius:14px; padding:14px 18px; margin-bottom:20px; color:#8a6d1b; display:none; }
+        .ov { position:fixed; inset:0; background:rgba(40,50,35,0.55); display:none; align-items:center; justify-content:center; z-index:100; padding:18px; }
+        .ov.show { display:flex; }
+        .ov-card { background:#fff; border-radius:18px; padding:24px; max-width:520px; width:100%; max-height:90vh; overflow-y:auto; }
+        .ov-card h3 { color:var(--sage-d); margin-bottom:14px; }
+        .ov-card label { display:block; font-size:0.78rem; color:#6b7560; margin:10px 0 5px; }
+        .ov-card input,.ov-card select { width:100%; padding:11px 13px; border:1px solid #dde0d4; border-radius:10px; font-size:0.9rem; }
+        .ov-acoes { display:flex; gap:10px; margin-top:18px; }
+        .ov-acoes button { flex:1; padding:12px; border-radius:40px; border:none; cursor:pointer; font-weight:600; }
+        .anam-linha { padding:6px 0; border-bottom:1px solid #eef0e8; font-size:0.85rem; display:flex; justify-content:space-between; gap:12px; }
+        .anam-linha .r { color:#8a937e; } .anam-linha .v { font-weight:500; text-align:right; }
+    </style>
+</head>
+<body>
+<div id="authGate" style="position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:9999; background:linear-gradient(135deg,#6f7d63,#51604a);">
+    <div style="background:#fff; padding:32px 28px; border-radius:18px; max-width:320px; width:90%; text-align:center; box-shadow:0 18px 50px rgba(0,0,0,0.35);">
+        <div style="font-family:'Georgia',serif; font-style:italic; color:#51604a; font-size:1.5rem;">SPA Casas Brancas</div>
+        <div style="font-size:0.8rem; color:#8a937e; margin:4px 0 18px;">Painel da recepção · área restrita</div>
+        <input type="password" id="authInput" placeholder="Senha" autocomplete="off" data-lpignore="true" data-1p-ignore style="width:100%; padding:12px 14px; border:1px solid #dde0d4; border-radius:10px; font-size:1rem; margin-bottom:12px;">
+        <button id="authBtn" style="width:100%; padding:12px; background:linear-gradient(135deg,#6f7d63,#51604a); color:#fff; border:none; border-radius:40px; font-weight:600; cursor:pointer;">Entrar</button>
+        <div id="authErro" style="color:#b85c5a; font-size:0.8rem; margin-top:10px; display:none;">Senha incorreta</div>
+    </div>
+</div>
+<script>
+(function(){ var S="Spa2026"; function lib(){var g=document.getElementById('authGate'); if(g)g.style.display='none';}
+ var b=document.getElementById('authBtn'),i=document.getElementById('authInput');
+ function t(){ if(i.value===S)lib(); else {document.getElementById('authErro').style.display='block'; i.value='';} }
+ b.addEventListener('click',t); i.addEventListener('keydown',function(e){if(e.key==='Enter')t();}); i.focus();
+})();
+</script>
+
+<div class="container">
+    <div class="topo">
+        <div><h1>Painel da Recepção — SPA</h1><div class="sub">Agenda, atendimentos e financeiro</div></div>
+        <img src="spa-logo-white.png" alt="SPA">
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="agenda">Agenda</button>
+        <button class="tab-btn" data-tab="financeiro">Financeiro</button>
+    </div>
+
+    <div class="header-actions">
+        <div class="last-update" id="lastUpdate">Carregando...</div>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <label style="font-size:0.8rem; color:#6b7560; display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="autoRefresh" checked> Atualizar automaticamente</label>
+            <button class="btn btn-main" id="refreshBtn">Atualizar</button>
+        </div>
+    </div>
+    <div id="errorDisplay" class="conflito" style="background:#faecec;border-color:#e0a0a0;color:#b85c5a;"></div>
+
+    <div id="tab-agenda" class="tab-content active">
+        <div style="margin-bottom:16px;"><button class="btn btn-main" id="novoBtn">+ Novo agendamento</button></div>
+        <div id="conflitosBox" class="conflito"></div>
+        <div class="table-container"><h3>Próximos atendimentos</h3><div id="proximos" style="margin-top:12px;">Carregando...</div></div>
+        <div class="table-container">
+            <div class="filtros-bar">
+                <input type="text" id="fBusca" class="busca" placeholder="Buscar por hóspede, quarto ou serviço...">
+                <input type="date" id="fData">
+                <select id="fStatus"><option value="todos">Todos os status</option><option value="ativos">Ativos</option><option value="finalizados">Finalizados</option><option value="cancelados">Cancelados</option></select>
+                <select id="fTerapeuta"><option value="todos">Todos terapeutas</option><option>Tasso</option><option>Jéssica</option><option>Dani</option><option>Vanina</option><option>Bahia</option></select>
+                <button class="btn btn-main" id="limparBtn" style="background:#9c8763;">Limpar</button>
+            </div>
+            <div style="overflow-x:auto; max-height:560px; overflow-y:auto;">
+                <table><thead><tr><th>Data</th><th>Horário</th><th>Hóspede</th><th>Quarto</th><th>Serviço</th><th>Dur.</th><th>Terapeuta</th><th>Sala</th><th>Valor</th><th>Ações</th></tr></thead>
+                <tbody id="corpo"><tr><td colspan="10" style="text-align:center;">Carregando...</td></tr></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-financeiro" class="tab-content">
+        <div class="periodo-card">
+            <div style="font-size:0.9rem; opacity:0.9;">Receita do período</div>
+            <div class="v" id="finTotal">R$ -</div>
+            <div class="periodo-btns">
+                <button class="periodo-btn active" data-p="todos">Todos</button>
+                <button class="periodo-btn" data-p="mesAtual">Este mês</button>
+                <button class="periodo-btn" data-p="mesAnterior">Mês passado</button>
+                <button class="periodo-btn" data-p="trimestre">3 meses</button>
+            </div>
+        </div>
+        <div class="table-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+                <h3>Por terapeuta (período)</h3><button class="btn btn-main" id="pdfBtn" style="background:#9c8763;">📄 Exportar PDF</button>
+            </div>
+            <div id="finDetalhe"></div>
+        </div>
+    </div>
+</div>
+
+<div class="ov" id="editOv"><div class="ov-card">
+    <h3>Ajustar atendimento</h3>
+    <div id="editResumo" style="font-size:0.82rem;color:#8a937e;margin-bottom:6px;"></div>
+    <label>Data</label><input type="date" id="eData">
+    <label>Horário</label><input type="text" id="eHora" list="slots" placeholder="14:30"><datalist id="slots"><option>14:30</option><option>16:00</option><option>17:30</option><option>19:00</option></datalist>
+    <label>Terapeuta</label><select id="eTer"><option value="">(a definir)</option><option>Tasso</option><option>Jéssica</option><option>Dani</option><option>Vanina</option><option>Bahia</option></select>
+    <label>Sala / Cabine</label><input type="text" id="eSala" placeholder="Ex.: Cabine 1">
+    <label>Valor (R$)</label><input type="number" id="eValor" min="0" step="10">
+    <div class="ov-acoes">
+        <button style="background:transparent;color:#6b7560;border:1px solid #cfd4c4 !important;" id="eCancelar">Fechar</button>
+        <button style="background:linear-gradient(135deg,var(--sage),var(--sage-d));color:#fff;" id="eSalvar">Salvar</button>
+    </div>
+</div></div>
+
+<div class="ov" id="novoOv"><div class="ov-card">
+    <h3>Novo agendamento</h3>
+    <div style="font-size:0.82rem;color:#8a937e;margin-bottom:6px;">A recepção define o horário, nome e quarto. Em seguida é gerada a ficha pré-preenchida para o hóspede completar (serviço + anamnese).</div>
+    <label>Data</label><input type="date" id="novoData">
+    <label>Horário</label><input type="text" id="novoHora" list="slots" placeholder="14:30">
+    <label>Nome do hóspede</label><input type="text" id="novoNome" placeholder="Nome completo">
+    <label>Quarto / reserva</label><input type="text" id="novoQuarto" placeholder="Ex.: 204">
+    <label>Terapeuta (opcional)</label><select id="novoTer"><option value="">(a definir)</option><option>Tasso</option><option>Jéssica</option><option>Dani</option><option>Vanina</option><option>Bahia</option></select>
+    <label>Sala / cabine (opcional)</label><input type="text" id="novoSala" placeholder="Ex.: Cabine 1">
+    <div id="linkBox" style="display:none; margin-top:14px; background:#eef3e6; border-radius:10px; padding:12px;">
+        <div style="font-size:0.78rem;color:#51604a;margin-bottom:6px;">Link da ficha do hóspede:</div>
+        <input type="text" id="linkInput" readonly style="width:100%; padding:9px 11px; border:1px solid #cfd9c2; border-radius:8px; font-size:0.8rem;">
+        <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn btn-main" id="copiarLink" style="flex:1;">Copiar link</button>
+            <button class="btn btn-main" id="abrirLink" style="flex:1; background:#9c8763;">Abrir ficha</button>
+        </div>
+    </div>
+    <div class="ov-acoes">
+        <button style="background:transparent;color:#6b7560;border:1px solid #cfd4c4 !important;" id="novoFechar">Fechar</button>
+        <button style="background:linear-gradient(135deg,var(--sage),var(--sage-d));color:#fff;" id="novoGerar">Gerar ficha</button>
+    </div>
+</div></div>
+
+<div class="ov" id="anamOv"><div class="ov-card">
+    <h3>Ficha de anamnese</h3>
+    <div id="anamBody"></div>
+    <div class="ov-acoes"><button style="background:linear-gradient(135deg,var(--sage),var(--sage-d));color:#fff;" id="anamFechar">Fechar</button></div>
+</div></div>
+
+<script>
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxOhd-rs25ko1Xkd46A1EKWM7npWBg3rfKigW41XY6Kvdi9wvXCu2PjsVV5w5RNhole/exec";
+    const SPA_WHATSAPP = "5522997909544";
+    const SPA_EMAIL = "front@casasbrancas.com.br";
+    const FICHA_URL = "index.html"; // ficha do hóspede publicada como index.html
+    let reservas = [], periodo='todos', editando=null, autoTimer=null;
+
+    function brl(v){ return "R$ "+(Math.round(parseFloat(v)||0)).toLocaleString('pt-BR'); }
+    function getStatus(t){ return (t["Status"]||'active').toString().toLowerCase()||'active'; }
+    function isCanc(t){ return getStatus(t)==='cancelled'; }
+    function isDone(t){ return getStatus(t)==='completed'; }
+    function dataKey(t){ if(!t["Data"])return null; let d=new Date(t["Data"]); return isNaN(d)?null:(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); }
+    function keyOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    function fData(v){ if(!v)return"-"; let d=new Date(v); return isNaN(d)?"-":(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()); }
+    function hora(t){ let h=(t["Horario"]||'').toString(); let m=h.match(/(\d{1,2}):(\d{2})/); return m?(m[1].padStart(2,'0')+':'+m[2]):(h||'-'); }
+    function waPhone(tel){ let d=(tel||'').toString().replace(/\D/g,''); if(!d)return''; if(d.startsWith('55')&&d.length>=12)return d; if(d.length===10||d.length===11)return '55'+d; return d; }
+    function porId(id){ return reservas.find(x=>(x["ID"]||'').toString()===(id||'').toString()); }
+    function post(id,campos){ try{ fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:'update',id:id},campos))}); }catch(e){console.error(e);} }
+
+    async function carregar(){
+        if(WEBAPP_URL.indexOf('COLE_AQUI')>-1){ document.getElementById('lastUpdate').innerText='Aguardando configuração do back-end (Apps Script do SPA).'; return; }
+        try{
+            const r=await fetch(WEBAPP_URL); const d=await r.json();
+            reservas=Array.isArray(d)?d:[];
+            document.getElementById('lastUpdate').innerText='Atualizado: '+new Date().toLocaleString('pt-BR')+' ('+reservas.length+')';
+            renderConflitos(); renderProximos(); renderLista(); renderFinanceiro(periodo);
+        }catch(e){ let el=document.getElementById('errorDisplay'); el.style.display='block'; el.innerText='Erro ao carregar: '+e.message; }
+    }
+
+    function statusInfo(t){ let s=getStatus(t);
+        if(s==='completed')return{l:'Finalizado',c:'color:#2f7d8c;background:#e6f0f2'};
+        if(s==='cancelled')return{l:'Cancelado',c:'color:#b85c5a;background:#faecec'};
+        if(s==='confirmed')return{l:'Confirmado',c:'color:#51604a;background:#eef3e6'};
+        return{l:'Solicitado',c:'color:#8a6d1b;background:#fff3cd'};
+    }
+
+    function renderProximos(){
+        let hojeK=keyOf(new Date()), am=new Date(); am.setDate(am.getDate()+1); let amK=keyOf(am);
+        let ativos=reservas.filter(t=>!isCanc(t));
+        let doDia=k=>ativos.filter(t=>dataKey(t)===k).sort((a,b)=>hora(a).localeCompare(hora(b)));
+        let item=t=>{ let si=statusInfo(t); return `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eef0e8;"><div><b style="color:var(--sage-d)">${hora(t)}</b> · ${t["Nome"]||'-'}<br><span style="font-size:0.74rem;color:#8a937e;">${t["Servico"]||'-'} · ${t["Terapeuta"]||'(a definir)'}</span></div><span class="tag" style="${si.c}">${si.l}</span></div>`; };
+        let col=(tit,l)=>`<div style="flex:1;min-width:260px;"><h4 style="color:var(--sage-d);font-size:0.95rem;margin-bottom:6px;">${tit} (${l.length})</h4>${l.length?l.map(item).join(''):'<div style="color:#9aa18d;font-size:0.85rem;">Nenhum.</div>'}</div>`;
+        document.getElementById('proximos').innerHTML='<div style="display:flex;gap:16px;flex-wrap:wrap;">'+col('Hoje',doDia(hojeK))+col('Amanhã',doDia(amK))+'</div>';
+    }
+
+    function minutos(t){ let h=hora(t); let m=h.match(/(\d{1,2}):(\d{2})/); return m?(+m[1]*60 + +m[2]):null; }
+    function durMin(t){ let d=parseInt(t["Duracao"]); return isNaN(d)?50:d; }
+    function renderConflitos(){
+        let box=document.getElementById('conflitosBox');
+        let ativos=reservas.filter(t=>!isCanc(t)&&dataKey(t)&&minutos(t)!=null);
+        let conf=[];
+        function checa(chaveFn, rotuloFn){
+            let g={};
+            ativos.forEach(t=>{ let k=chaveFn(t); if(!k)return; (g[k]=g[k]||[]).push(t); });
+            Object.values(g).forEach(arr=>{ arr.sort((a,b)=>minutos(a)-minutos(b));
+                for(let i=0;i<arr.length-1;i++){ let a=arr[i], b=arr[i+1]; if(minutos(b) < minutos(a)+durMin(a)+30) conf.push({a:a,b:b,motivo:rotuloFn(a)}); } });
+        }
+        checa(t=>{ let x=(t["Terapeuta"]||'').toString().trim(); return x?('T|'+x+'|'+dataKey(t)):null; }, a=>'Terapeuta '+a["Terapeuta"]+' (intervalo menor que 30 min)');
+        checa(t=>{ let x=(t["Sala"]||'').toString().trim(); return x?('S|'+x+'|'+dataKey(t)):null; }, a=>'Sala '+a["Sala"]);
+        if(!conf.length){ box.style.display='none'; box.innerHTML=''; return; }
+        box.style.display='block';
+        box.innerHTML='<strong>⚠️ Conflitos de agenda ('+conf.length+')</strong>'+conf.map(c=>`<div style="margin-top:6px;font-size:0.85rem;">${c.motivo} — ${fData(c.a["Data"])} <b>${hora(c.a)}</b>: ${c.a["Nome"]||'-'} ↔ ${c.b["Nome"]||'-'}</div>`).join('');
+    }
+
+    function filtros(){ return { busca:(document.getElementById('fBusca').value||'').toLowerCase().trim(), data:document.getElementById('fData').value||'', status:document.getElementById('fStatus').value, ter:document.getElementById('fTerapeuta').value }; }
+
+    function renderLista(){
+        let tb=document.getElementById('corpo');
+        if(!reservas.length){ tb.innerHTML='<tr><td colspan="10" style="text-align:center;">Nenhum atendimento.</td></tr>'; return; }
+        let f=filtros();
+        let lista=reservas.filter(t=>{
+            if(f.busca){ let alvo=((t["Nome"]||'')+' '+(t["Quarto"]||'')+' '+(t["Servico"]||'')).toLowerCase(); if(!alvo.includes(f.busca))return false; }
+            if(f.data && dataKey(t)!==f.data) return false;
+            if(f.ter!=='todos' && (t["Terapeuta"]||'')!==f.ter) return false;
+            if(f.status==='ativos' && (isDone(t)||isCanc(t))) return false;
+            if(f.status==='finalizados' && !isDone(t)) return false;
+            if(f.status==='cancelados' && !isCanc(t)) return false;
+            return true;
+        });
+        if(!lista.length){ tb.innerHTML='<tr><td colspan="10" style="text-align:center;">Nenhum com esses filtros.</td></tr>'; return; }
+        lista.sort((a,b)=>{ let d=new Date(a["Data"])-new Date(b["Data"]); return d!==0?d:hora(a).localeCompare(hora(b)); });
+        let grupos={};
+        lista.forEach(t=>{ let d=new Date(t["Data"]); let g=isNaN(d)?'Sem data':d.toLocaleString('pt-BR',{month:'long',year:'numeric'}); (grupos[g]=grupos[g]||[]).push(t); });
+        let html='';
+        for(let [g,itens] of Object.entries(grupos)){
+            html+=`<tr class="month-group"><td colspan="10"><strong>${g}</strong> (${itens.length})</td></tr>`;
+            itens.forEach(t=>{
+                let s=getStatus(t), rc=isCanc(t)?'cancelled-row':(isDone(t)?'completed-row':'');
+                let jt=JSON.stringify(t).replace(/"/g,'&quot;');
+                let dis=isCanc(t)||isDone(t);
+                html+=`<tr class="${rc}">
+                    <td>${fData(t["Data"])}</td><td><b>${hora(t)}</b></td><td>${t["Nome"]||'-'}</td>
+                    <td>${t["Quarto"]||'-'}</td><td>${t["Servico"]||'-'}${t["DuasPessoas"]==='Sim'?' <span class="tag" style="color:#51604a;background:#eef3e6;">2p</span>':''}</td>
+                    <td>${t["Duracao"]||'-'}min</td><td>${t["Terapeuta"]||'<span style="color:#b08;">(definir)</span>'}</td>
+                    <td>${t["Sala"]||'-'}</td><td>${brl(t["ValorTotal"])}</td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn btn-ficha" onclick='verFicha(${jt})'>Ficha</button>
+                        <button class="btn btn-edit" onclick='abrirEdit(${jt})' ${isCanc(t)?'disabled':''}>Editar</button>
+                        <button class="btn btn-wa" onclick='confirmar(${jt})' ${dis?'disabled':''}>Confirmar</button>
+                        <button class="btn btn-fim" onclick='marcar(${jt},"completed")' ${dis?'disabled':''}>Finalizar</button>
+                        <button class="btn btn-canc" onclick='marcar(${jt},"cancelled")' ${isCanc(t)?'disabled':''}>Cancelar</button>
+                    </td></tr>`;
+            });
+        }
+        tb.innerHTML=html;
+    }
+
+    function marcar(t,st){ let it=porId(t["ID"])||t; it["Status"]=st; post(it["ID"],{status:st}); renderLista(); renderProximos(); renderConflitos(); renderFinanceiro(periodo); }
+
+    function confirmar(t){
+        let data=fData(t["Data"]), h=hora(t);
+        let msg="RESERVA CONFIRMADA - SPA CASAS BRANCAS\n\n"+
+            "Olá, "+(t["Nome"]||'')+"! Sua experiência está confirmada.\n\n"+
+            "Serviço: "+(t["Servico"]||'-')+" ("+(t["Duracao"]||'-')+" min)\n"+
+            "Data: "+data+" às "+h+"\n"+
+            "Terapeuta: "+(t["Terapeuta"]||'a definir')+"\n"+
+            (t["Sala"]?("Local: "+t["Sala"]+"\n"):"")+
+            "Valor: "+brl(t["ValorTotal"])+"\n\n"+
+            "Recomendamos chegar 10 min antes. Até breve!\nCasas Brancas SPA";
+        let metodo=(t["Contato"]||'').toString().toLowerCase();
+        let email=(t["Email"]||'').toString().trim();
+        if(metodo==='email' || (!t["Telefone"]&&email)){
+            if(!email){ alert("Hóspede sem e-mail."); return; }
+            window.location.href="mailto:"+email+"?subject="+encodeURIComponent("Confirmação SPA - Casas Brancas")+"&body="+encodeURIComponent(msg); return;
+        }
+        let tel=waPhone(t["Telefone"]); if(!tel){ alert("Hóspede sem telefone."); return; }
+        window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg),"_blank");
+    }
+
+    function verFicha(t){
+        let a={}; try{ a=JSON.parse(t["Anamnese"]||'{}'); }catch(e){}
+        let rotulos={tipoFicha:'Tipo',foco:'Foco',evitar:'Evitar',homeopatico:'Homeopático',protese:'Prótese/metal',psiquiatrico:'Acomp. psiquiátrico',medicacao:'Medicação contínua',condicoes:'Condições',sinergia:'Sinergia',calcado:'Calçado',bebida:'Bebida',lentes:'Lentes de contato',acido:'Ácido na pele',anticoncepcional:'Anticoncepcional',sol:'Toma sol'};
+        let linhas=Object.keys(a).filter(k=>a[k]!=='' && a[k]!=null).map(k=>`<div class="anam-linha"><span class="r">${rotulos[k]||k}</span><span class="v">${a[k]}</span></div>`).join('');
+        document.getElementById('anamBody').innerHTML=
+            `<div style="margin-bottom:10px;"><b>${t["Nome"]||'-'}</b> · Quarto ${t["Quarto"]||'-'} · ${t["Servico"]||'-'}</div>`+
+            (linhas||'<div style="color:#8a937e;">Sem ficha preenchida.</div>')+
+            (t["Obs"]?`<div class="anam-linha"><span class="r">Observações</span><span class="v">${t["Obs"]}</span></div>`:'');
+        document.getElementById('anamOv').classList.add('show');
+    }
+
+    function abrirEdit(t){
+        editando=porId(t["ID"])||t;
+        document.getElementById('editResumo').innerText=(editando["Nome"]||'-')+' · '+(editando["Servico"]||'-');
+        document.getElementById('eData').value=(editando["Data"]||'').toString().slice(0,10);
+        document.getElementById('eHora').value=hora(editando)==='-'?'':hora(editando);
+        document.getElementById('eTer').value=editando["Terapeuta"]||'';
+        document.getElementById('eSala').value=editando["Sala"]||'';
+        let v=parseFloat(editando["ValorTotal"]); document.getElementById('eValor').value=isNaN(v)?'':v;
+        document.getElementById('editOv').classList.add('show');
+    }
+    function salvarEdit(){
+        if(!editando)return;
+        let campos={ data:document.getElementById('eData').value, horario:document.getElementById('eHora').value, terapeuta:document.getElementById('eTer').value, sala:document.getElementById('eSala').value, valorTotal:parseFloat(document.getElementById('eValor').value)||0, status:(getStatus(editando)==='active'?'confirmed':getStatus(editando)) };
+        Object.assign(editando,{Data:campos.data,Horario:campos.horario,Terapeuta:campos.terapeuta,Sala:campos.sala,ValorTotal:campos.valorTotal,Status:campos.status});
+        post(editando["ID"],campos);
+        document.getElementById('editOv').classList.remove('show');
+        renderLista(); renderProximos(); renderConflitos(); renderFinanceiro(periodo);
+    }
+
+    // ===== FINANCEIRO =====
+    const PCT_COMISSAO=0.28;
+    function comissionavel(s){ s=(s||'').toString().toLowerCase().trim(); if(s==='yoga')return false; return !['reiki','pilates','gds','osteo'].some(x=>s.indexOf(x)>-1); }
+    function comissaoDe(t){ return comissionavel(t["Servico"])?Math.round((parseFloat(t["ValorTotal"])||0)*PCT_COMISSAO):0; }
+    // Competência 21 -> 20 (igual à planilha do SPA)
+    function janelaComp(off){ let h=new Date(); h.setHours(0,0,0,0); let ini=(h.getDate()>=21)?new Date(h.getFullYear(),h.getMonth(),21):new Date(h.getFullYear(),h.getMonth()-1,21); ini.setMonth(ini.getMonth()+off); let fim=new Date(ini.getFullYear(),ini.getMonth()+1,20,23,59,59); return {ini:ini,fim:fim}; }
+    function doPeriodo(p){
+        let at=reservas.filter(t=>!isCanc(t));
+        if(p==='todos')return at;
+        let w = p==='mesAtual'?janelaComp(0):(p==='mesAnterior'?janelaComp(-1):{ini:janelaComp(-2).ini,fim:janelaComp(0).fim});
+        return at.filter(t=>{ let d=new Date(t["Data"]); if(isNaN(d))return false; d.setHours(12,0,0,0); return d>=w.ini&&d<=w.fim; });
+    }
+    function renderFinanceiro(p){
+        periodo=p;
+        let lista=doPeriodo(p);
+        let total=lista.reduce((s,t)=>s+(parseFloat(t["ValorTotal"])||0),0);
+        let qtd=lista.length, ticket=qtd?total/qtd:0, recep=total*0.06;
+        document.getElementById('finTotal').innerText=brl(total);
+        let porT={}; lista.forEach(t=>{ let k=(t["Terapeuta"]||'(sem terapeuta)'); if(!porT[k])porT[k]={q:0,v:0,c:0}; porT[k].q++; porT[k].v+=parseFloat(t["ValorTotal"])||0; porT[k].c+=comissaoDe(t); });
+        let prof=Object.entries(porT).sort((a,b)=>b[1].v-a[1].v).map(([k,d])=>`<tr><td>${k}</td><td>${d.q}</td><td>${brl(d.v)}</td><td>${brl(d.c)}</td></tr>`).join('');
+        let porS={}; lista.forEach(t=>{ let k=(t["Servico"]||'-'); if(!porS[k])porS[k]={q:0,v:0}; porS[k].q++; porS[k].v+=parseFloat(t["ValorTotal"])||0; });
+        let trat=Object.entries(porS).sort((a,b)=>b[1].v-a[1].v).map(([k,d])=>`<tr><td>${k}</td><td>${d.q}</td><td>${brl(d.v)}</td><td>${total?Math.round(d.v/total*100):0}%</td></tr>`).join('');
+        document.getElementById('finDetalhe').innerHTML=
+            `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+                <div style="flex:1;min-width:150px;background:#f3f6ee;border-radius:12px;padding:14px;"><div style="font-size:0.75rem;color:#8a937e;">Ticket médio</div><div style="font-size:1.4rem;font-weight:700;color:var(--sage-d);">${brl(ticket)}</div></div>
+                <div style="flex:1;min-width:150px;background:#f3f6ee;border-radius:12px;padding:14px;"><div style="font-size:0.75rem;color:#8a937e;">Atendimentos</div><div style="font-size:1.4rem;font-weight:700;color:var(--sage-d);">${qtd}</div></div>
+                <div style="flex:1;min-width:150px;background:#f3f6ee;border-radius:12px;padding:14px;"><div style="font-size:0.75rem;color:#8a937e;">Comissão recepção (6%)</div><div style="font-size:1.4rem;font-weight:700;color:var(--sage-d);">${brl(recep)}</div></div>
+            </div>
+            <h3 style="margin:6px 0 8px;">Por profissional</h3>
+            <table><thead><tr><th>Terapeuta</th><th>Atend.</th><th>Receita</th><th>Comissão (28%)</th></tr></thead><tbody>${prof||'<tr><td colspan=4>Sem dados.</td></tr>'}</tbody></table>
+            <h3 style="margin:16px 0 8px;">Por tratamento</h3>
+            <table><thead><tr><th>Tratamento</th><th>Qtd</th><th>Valor</th><th>%</th></tr></thead><tbody>${trat||'<tr><td colspan=4>Sem dados.</td></tr>'}</tbody></table>`;
+        document.querySelectorAll('.periodo-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-p')===p));
+    }
+    function exportarPDF(){
+        let lbl={todos:'Todos',mesAtual:'Este mês',mesAnterior:'Mês passado',trimestre:'Últimos 3 meses'};
+        let lista=[...doPeriodo(periodo)].sort((a,b)=>new Date(a["Data"])-new Date(b["Data"]));
+        let total=lista.reduce((s,t)=>s+(parseFloat(t["ValorTotal"])||0),0);
+        let rows=lista.map(t=>`<tr><td>${fData(t["Data"])}</td><td>${hora(t)}</td><td>${t["Nome"]||'-'}</td><td>${t["Servico"]||'-'}</td><td>${t["Terapeuta"]||'-'}</td><td style="text-align:right;">${brl(t["ValorTotal"])}</td></tr>`).join('');
+        let html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Financeiro SPA</title><style>body{font-family:Arial;color:#34362f;padding:30px;}h1{color:#51604a;font-size:1.3rem;}.s{color:#8a937e;font-size:0.85rem;margin-bottom:16px;}table{width:100%;border-collapse:collapse;font-size:0.82rem;}th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left;}th{background:#eef2e6;color:#51604a;}tfoot td{font-weight:bold;border-top:2px solid #51604a;}@media print{.np{display:none;}}</style></head><body>'+
+            '<h1>Financeiro — SPA Casas Brancas</h1><div class="s">Período: '+(lbl[periodo]||'Todos')+' · '+lista.length+' atendimentos · '+new Date().toLocaleString('pt-BR')+'</div>'+
+            '<button class="np" onclick="window.print()" style="margin-bottom:12px;padding:8px 16px;background:#51604a;color:#fff;border:none;border-radius:8px;cursor:pointer;">Imprimir / Salvar PDF</button>'+
+            '<table><thead><tr><th>Data</th><th>Horário</th><th>Hóspede</th><th>Serviço</th><th>Terapeuta</th><th style="text-align:right;">Valor</th></tr></thead><tbody>'+(rows||'<tr><td colspan=6>Sem dados.</td></tr>')+'</tbody><tfoot><tr><td colspan=5>Total</td><td style="text-align:right;">'+brl(total)+'</td></tr></tfoot></table></body></html>';
+        let w=window.open('','_blank'); if(!w){alert('Permita pop-ups.');return;} w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>{try{w.print();}catch(e){}},500);
+    }
+
+    // ===== EVENTOS =====
+    document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active')); document.getElementById('tab-'+b.getAttribute('data-tab')).classList.add('active'); document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
+    document.querySelectorAll('.periodo-btn').forEach(b=>b.addEventListener('click',()=>renderFinanceiro(b.getAttribute('data-p'))));
+    document.getElementById('refreshBtn').addEventListener('click',carregar);
+    document.getElementById('pdfBtn').addEventListener('click',exportarPDF);
+    ['fBusca','fData','fStatus','fTerapeuta'].forEach(id=>{ let e=document.getElementById(id); e.addEventListener('input',renderLista); e.addEventListener('change',renderLista); });
+    document.getElementById('limparBtn').addEventListener('click',()=>{ document.getElementById('fBusca').value=''; document.getElementById('fData').value=''; document.getElementById('fStatus').value='todos'; document.getElementById('fTerapeuta').value='todos'; renderLista(); });
+    document.getElementById('eCancelar').addEventListener('click',()=>document.getElementById('editOv').classList.remove('show'));
+    document.getElementById('eSalvar').addEventListener('click',salvarEdit);
+    document.getElementById(

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>SPA Casas Brancas — Reserva</title>
+    <meta name="theme-color" content="#51604a">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --sage:#6f7d63; --sage-d:#51604a; --sand:#b9a17c; --sand-d:#9c8763; --cream:#f4f1e8; --ink:#34362f; }
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; color: #3a3c34; padding: 20px 20px 110px; min-height: 100vh; position: relative; }
+        body::before { content:''; position:fixed; inset:0; z-index:-2; background:#eef0e8; }
+        body::after { content:''; position:fixed; inset:0; z-index:-1; background:linear-gradient(160deg,#f4f1e8 0%, #e7ebe0 100%); }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: #fff; border-radius: 18px; box-shadow: 0 12px 36px rgba(60,70,50,0.10); overflow: hidden; margin-bottom: 20px; border: 1px solid #e3e6da; }
+        .card-header { position: relative; overflow: hidden; color: #fff; padding: 30px 28px; background: linear-gradient(135deg, var(--sage) 0%, var(--sage-d) 100%); display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+        .ch-left { min-width: 0; }
+        .card-header h1 { font-size: 1.7rem; font-weight: 400; font-family: 'Georgia', serif; font-style: italic; }
+        .card-header .sub { font-size: 0.82rem; color: rgba(255,255,255,0.85); margin-top: 6px; }
+        .ch-logo { height: 62px; width: auto; flex: 0 0 auto; }
+        @media (max-width: 550px) { .ch-logo { height: 42px; } .card-header h1 { font-size: 1.45rem; } }
+        .card-body { padding: 26px; }
+        .step-section { background: #fcfcfa; border-radius: 16px; padding: 20px 22px; margin-bottom: 22px; border: 1px solid #e9ece1; }
+        .step-title { font-weight: 600; font-size: 1rem; margin-bottom: 16px; color: var(--sage-d); border-left: 3px solid var(--sand); padding-left: 12px; }
+        .form-row { margin-bottom: 16px; }
+        label { font-size: 0.8rem; display: block; margin-bottom: 6px; color: #6b7560; }
+        input, select, textarea { width: 100%; padding: 12px 14px; border: 1px solid #dde0d4; border-radius: 12px; font-size: 0.9rem; background: #fff; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--sage); box-shadow: 0 0 0 3px rgba(111,125,99,0.12); }
+        .radio-group { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 4px; }
+        .radio-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #3a3c34; }
+        .radio-group input { width: auto; margin: 0; }
+        .tel-row { display: flex; gap: 10px; } .tel-row select { width: 120px; flex: 0 0 auto; } .tel-row input { flex: 1; }
+        .cat-nome { font-weight: 600; font-size: 0.9rem; color: var(--sand-d); margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #eaece1; }
+        .serv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px,1fr)); gap: 12px; margin-top: 6px; }
+        .serv { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; border: 1px solid #e3e6da; border-radius: 14px; padding: 16px 10px; cursor: pointer; transition: all .15s; background: #fff; }
+        .serv:hover { border-color: var(--sage); transform: translateY(-2px); }
+        .serv.sel { border-color: var(--sage); box-shadow: 0 0 0 2px var(--sage) inset; background: #f3f6ee; }
+        .serv .ic { width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; }
+        .serv .n { font-weight: 600; font-size: 0.82rem; line-height: 1.25; }
+        .serv .d { font-size: 0.7rem; color: #8a937e; }
+        .serv .p { font-weight: 700; color: var(--sage-d); font-size: 0.86rem; margin-top: 2px; }
+        .chk { display: flex; align-items: center; gap: 8px; cursor: pointer; } .chk input { width: auto; }
+        .cond-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-top: 6px; }
+        .cond-grid label { display: flex; align-items: center; gap: 7px; font-size: 0.82rem; color: #3a3c34; cursor: pointer; margin: 0; }
+        .cond-grid input { width: auto; }
+        .info-box { background: #f3f6ee; border-left: 3px solid var(--sand); padding: 12px 16px; border-radius: 10px; margin-bottom: 22px; font-size: 0.78rem; color: #5d6b50; }
+        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
+        .btn-submit, .btn-copy { flex: 1; padding: 14px; border-radius: 40px; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: none; }
+        .btn-submit { background: linear-gradient(135deg, var(--sage), var(--sage-d)); color: #fff; }
+        .btn-copy { background: transparent; color: #6b7560; border: 1px solid #cfd4c4; }
+        .feedback { margin-top: 16px; text-align: center; font-size: 0.82rem; padding: 12px; border-radius: 40px; display: none; }
+        .feedback.error { background: #faecec; color: #b85c5a; display: block; }
+        .feedback.success { background: #eef3e6; color: var(--sage-d); display: block; }
+        .price-bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #e3e6da; box-shadow: 0 -4px 20px rgba(60,70,50,0.06); padding: 12px 20px; z-index: 50; }
+        .price-bar-inner { max-width: 800px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+        .price-bar-label { font-size: 0.7rem; color: #8a937e; } .price-bar-value { font-size: 1.3rem; font-weight: 700; color: var(--sage-d); }
+        .price-bar .btn-submit { flex: 0 0 auto; padding: 12px 26px; }
+        .overlay { position: fixed; inset: 0; background: rgba(40,50,35,0.55); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        .overlay.show { display: flex; }
+        .overlay-card { background: #fff; border-radius: 20px; padding: 36px 28px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+        .overlay-check { width: 64px; height: 64px; border-radius: 50%; background: #eef3e6; color: var(--sage-d); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 18px; }
+        .overlay-card h2 { font-family: 'Georgia', serif; font-style: italic; color: var(--sage-d); margin-bottom: 12px; font-weight: 400; }
+        .overlay-card p { font-size: 0.9rem; color: #6b7560; line-height: 1.6; margin-bottom: 24px; }
+        .hint { font-size: 0.72rem; color: #8a937e; margin-top: 4px; }
+        @media (max-width: 550px) { .card-body { padding: 20px; } .cond-grid { grid-template-columns: 1fr; } .btn-group { flex-direction: column; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <div class="ch-left">
+                <h1>Reserva de Experiência</h1>
+                <div class="sub">Agende seu momento de autocuidado — nossa recepção confirmará o horário.</div>
+            </div>
+            <img class="ch-logo" src="spa-logo-white.png" alt="Casas Brancas SPA">
+        </div>
+        <div class="card-body">
+            <div class="info-box">As reservas são <strong>solicitações</strong>: após o envio, a recepção confirma a disponibilidade do horário e do terapeuta. Recomendamos agendar com antecedência.</div>
+            <div id="formContent"></div>
+        </div>
+    </div>
+</div>
+
+<div class="price-bar">
+    <div class="price-bar-inner">
+        <div><div class="price-bar-label">Valor estimado</div><div class="price-bar-value" id="priceBarValue">—</div></div>
+        <button type="button" class="btn-submit" id="enviarBtnBar">Enviar solicitação</button>
+    </div>
+</div>
+
+<div class="overlay" id="sucessoOverlay">
+    <div class="overlay-card">
+        <div class="overlay-check">&#10003;</div>
+        <h2>Solicitação enviada!</h2>
+        <p>Recebemos seu pedido de reserva. A recepção do SPA entrará em contato para confirmar o horário e o terapeuta.</p>
+        <button type="button" class="btn-submit" id="novaBtn">Fazer nova solicitação</button>
+    </div>
+</div>
+
+<script>
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxOhd-rs25ko1Xkd46A1EKWM7npWBg3rfKigW41XY6Kvdi9wvXCu2PjsVV5w5RNhole/exec";
+    const SPA_WHATSAPP = "5522997909544";
+    const SPA_EMAIL = "front@casasbrancas.com.br";
+
+    // Dados pré-definidos pela recepção (via link): id, nome, quarto, data, hora
+    const params = new URLSearchParams(location.search);
+    const PRE = { id:params.get('id')||'', nome:params.get('nome')||'', quarto:params.get('quarto')||'', data:params.get('data')||'', hora:params.get('hora')||'' };
+    const temPre = !!(PRE.nome || PRE.data || PRE.hora || PRE.quarto);
+    function fmtData(v){ if(!v) return ''; let m=v.toString().match(/(\d{4})-(\d{2})-(\d{2})/); return m?(m[3]+'/'+m[2]+'/'+m[1]):v; }
+    function getNome(){ return PRE.nome || (document.getElementById('nome')?.value||'').trim(); }
+    function getQuarto(){ return PRE.quarto || (document.getElementById('quarto')?.value||''); }
+    function getData(){ return PRE.data || (document.getElementById('data')?.value||''); }
+    function getHora(){ return PRE.hora || (document.getElementById('hora')?.value||''); }
+
+    const PAISES = [
+        { code:"55", label:"🇧🇷 +55" },{ code:"1", label:"🇺🇸 +1" },{ code:"54", label:"🇦🇷 +54" },
+        { code:"598", label:"🇺🇾 +598" },{ code:"34", label:"🇪🇸 +34" },{ code:"351", label:"🇵🇹 +351" },
+        { code:"33", label:"🇫🇷 +33" },{ code:"44", label:"🇬🇧 +44" },{ code:"49", label:"🇩🇪 +49" },{ code:"39", label:"🇮🇹 +39" }
+    ];
+
+    const CATALOGO = {
+        "Assinaturas Casas Brancas": [
+            { nome:"Casas Brancas Blend", dur:50, preco:400, dois:true },
+            { nome:"Casas Brancas Fluidity (Toque e Vibração)", dur:60, preco:520 }
+        ],
+        "Experiências integradas": [
+            { nome:"Yoga & Body Relax", dur:180, preco:720 }
+        ],
+        "Massagens": [
+            { nome:"Deep Tissue", dur:50, preco:398 },
+            { nome:"Sueca (Relaxante)", dur:50, preco:398 },
+            { nome:"Pedras Quentes", dur:50, preco:398 },
+            { nome:"Aromaterapia", dur:50, preco:398 },
+            { nome:"Pregnancy (Gestante)", dur:50, preco:398 }
+        ],
+        "Rituais de bem-estar": [
+            { nome:"Back Ritual (costas e ombros)", dur:30, preco:260 },
+            { nome:"Pés e Pernas", dur:30, preco:260 },
+            { nome:"Mãos, Cabeça e Cervical", dur:30, preco:280 }
+        ],
+        "Terapia vibracional": [
+            { nome:"Sound Healing", dur:50, preco:420 },
+            { nome:"Ritual do Som e Toque", dur:60, preco:489 }
+        ],
+        "Tratamentos e estética corporal": [
+            { nome:"Esfoliação e Hidratação", dur:60, preco:440 },
+            { nome:"Drenagem Linfática", dur:50, preco:398 },
+            { nome:"Tratamento Modelador", dur:50, preco:398 }
+        ],
+        "Estética facial": [
+            { nome:"Limpeza Facial", dur:60, preco:448, tipo:"facial" },
+            { nome:"Ritual Vitalité Essencial", dur:50, preco:400, tipo:"facial" }
+        ],
+        "Yoga": [
+            { nome:"Yoga & Facial Restore", dur:160, preco:650, tipo:"facial" },
+            { nome:"Yoga", dur:50, preco:350, extraPessoa:80 }
+        ]
+    };
+
+    let servicosSel = [];
+    const LIMITE_MIN = 120; // soma dos tratamentos não pode passar de 2h
+    function brl(v){ return "R$ " + (v||0).toLocaleString('pt-BR'); }
+    function findServ(id){ for(const itens of Object.values(CATALOGO)){ for(const s of itens){ if(s.nome.replace(/[^a-z0-9]/gi,'')===id) return s; } } return null; }
+    function totalDuracao(){ return servicosSel.reduce((a,s)=>a+(s.dur||0),0); }
+
+    function getTel(){
+        let ddi=document.getElementById('ddi')?.value||"55";
+        let raw=(document.getElementById('telefone')?.value||"").trim();
+        let num=raw.replace(/\D/g,"");
+        if(!num) return {display:"",numLen:0,sheet:""};
+        return {display:"+"+ddi+" "+raw, whats:ddi+num, numLen:num.length, sheet:ddi+" "+raw};
+    }
+    function metodoContato(){ return document.querySelector('input[name="contato"]:checked')?.value||"WhatsApp"; }
+    function getEmail(){ return (document.getElementById('email')?.value||"").trim(); }
+    function emailOk(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+    function toggleContato(){
+        let m=metodoContato();
+        document.getElementById('blocoWhats').style.display = m==='WhatsApp'?'':'none';
+        document.getElementById('blocoEmail').style.display = m==='Email'?'':'none';
+    }
+    function tipoFicha(){ if(!servicosSel.length) return 'massagem'; return servicosSel.some(s=>s.tipo!=='facial') ? 'massagem' : 'facial'; }
+    function valorTotal(){
+        let t = servicosSel.reduce((a,s)=>a+(s.preco||0),0);
+        if(document.getElementById('duasPessoas')?.checked) t += servicosSel.reduce((a,s)=>a+(s.extraPessoa||0),0);
+        return t;
+    }
+    function atualizarPreco(){
+        let pb=document.getElementById('priceBarValue');
+        pb.innerText = servicosSel.length ? (brl(valorTotal())+' · '+totalDuracao()+'min') : "—";
+    }
+
+    function condicoesMassagem(){
+        return ["Gravidez","Febre","Hipertensão ou hipotensão","Lesões/patologias na área da massagem","Patologia traumato-ortopédica","Patologia neurológica","Embolia ou trombose","Cirurgia recente","Alergia","Antecedentes oncológicos","Dor de cabeça","Dor de garganta","Tosse","Ausência de olfato"];
+    }
+    function condicoesFacial(){
+        return ["Gravidez","Febre","Hipertensão ou hipotensão","Embolia ou trombose","Cirurgia recente","Alergia","Antecedentes oncológicos","Dor de cabeça","Dor de garganta","Tosse","Ausência de olfato","Prótese dentária","Marcapasso","Diabetes"];
+    }
+    function simNao(id, label){
+        return `<div class="form-row"><label>${label}</label><div class="radio-group">
+            <label><input type="radio" name="${id}" value="Não" checked> Não</label>
+            <label><input type="radio" name="${id}" value="Sim"> Sim</label></div></div>`;
+    }
+    function checks(nome, itens){
+        return `<div class="cond-grid">` + itens.map(c=>`<label><input type="checkbox" name="${nome}" value="${c}"> ${c}</label>`).join('') + `</div>`;
+    }
+    function renderAnamnese(){
+        const cont = document.getElementById('anamneseBox');
+        if(!cont) return;
+        const tipo = tipoFicha();
+        let html = `<div class="hint" style="margin-bottom:10px;">Ficha de anamnese (${tipo === 'facial' ? 'tratamento facial' : 'massagem/corporal'}) — preencha para um atendimento seguro e personalizado.</div>`;
+        if(tipo === 'massagem'){
+            html += `<div class="form-row"><label>Região para focar a atenção</label>${checks('foco',["Cervical","Lombar","Costas","Pernas","Pés","Cabeça","Mãos"])}</div>`;
+            html += `<div class="form-row"><label>Alguma parte do corpo a ser evitada? Qual?</label><input type="text" id="evitar" placeholder="Opcional"></div>`;
+            html += simNao('homeopatico','Faz uso de tratamento homeopático?');
+            html += simNao('protese','Possui prótese, pino, implante ou metal no corpo?');
+            html += simNao('psiquiatrico','Faz acompanhamento/tratamento psiquiátrico?');
+            html += simNao('medicacao','Uso contínuo de alguma medicação importante de informar?');
+            html += `<div class="form-row"><label>Apresenta alguma destas condições?</label>${checks('condicoes',condicoesMassagem())}</div>`;
+            html += `<div class="form-row"><label>Sinergia para adicionar à massagem</label><select id="sinergia"><option value="">Nenhuma</option><option>Anti Stress</option><option>Afrodisíaco</option><option>Revitalizante</option><option>Purificante</option></select></div>`;
+            html += `<div class="form-row"><label>Numeração do calçado</label><input type="text" id="calcado" inputmode="numeric" placeholder="Ex.: 39"></div>`;
+            html += `<div class="form-row"><label>Após o tratamento, gostaria de beber</label><select id="bebida"><option value="">—</option><option>Chá quente</option><option>Chá quente com mel</option><option>Bebida refrescante Casas Brancas</option></select></div>`;
+        } else {
+            html += simNao('lentes','Usa lentes de contato?');
+            html += simNao('acido','Já usou ácido na pele?');
+            html += simNao('anticoncepcional','Faz uso de algum método anticoncepcional?');
+            html += simNao('sol','Costuma tomar sol?');
+            html += simNao('homeopatico','Faz uso de tratamento homeopático?');
+            html += simNao('psiquiatrico','Faz acompanhamento/tratamento psiquiátrico?');
+            html += simNao('medicacao','Uso contínuo de alguma medicação importante de informar?');
+            html += `<div class="form-row"><label>Apresenta alguma destas condições?</label>${checks('condicoes',condicoesFacial())}</div>`;
+            html += `<div class="form-row"><label>Após o tratamento, gostaria de beber</label><select id="bebida"><option value="">—</option><option>Chá quente</option><option>Chá quente com mel</option><option>Bebida refrescante Casas Brancas</option></select></div>`;
+        }
+        cont.innerHTML = html;
+    }
+
+    function iconFor(cat){
+        const c="#6f7d63";
+        const S=(p)=>`<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+        if(cat.indexOf('facial')>-1) return S('<circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01"/><path d="M9 14.5c1.2 1 4.8 1 6 0"/>');
+        if(cat.indexOf('Yoga')>-1) return S('<circle cx="12" cy="4.6" r="1.8"/><path d="M12 6.4V12"/><path d="M5 20c2-4.5 5-6 7-6s5 1.5 7 6"/><path d="M7.5 12.5l4.5 1.2 4.5-1.2"/>');
+        if(cat.indexOf('vibracional')>-1) return S('<path d="M3 12h2"/><path d="M7.5 8v8"/><path d="M12 5v14"/><path d="M16.5 8v8"/><path d="M21 12h-2"/>');
+        if(cat.indexOf('corporal')>-1) return S('<path d="M12 3s6 6.5 6 10.5a6 6 0 0 1-12 0C6 9.5 12 3 12 3z"/>');
+        return S('<path d="M5 21c0-9 7-16 16-16 0 9-7 16-16 16z"/><path d="M5 21c4.5-4.5 9-7.5 13-9.5"/>');
+    }
+    function renderServicos(){
+        let html='';
+        for(const [cat,itens] of Object.entries(CATALOGO)){
+            html += `<div class="cat-nome">${cat}</div><div class="serv-grid">`;
+            itens.forEach(s=>{
+                let id = s.nome.replace(/[^a-z0-9]/gi,'');
+                html += `<div class="serv" data-id="${id}">
+                    <div class="ic">${iconFor(cat)}</div>
+                    <div class="n">${s.nome}</div>
+                    <div class="d">${s.dur} min${s.dois?' · a dois':''}${s.extraPessoa?(' · +'+brl(s.extraPessoa)+'/pessoa'):''}</div>
+                    <div class="p">${brl(s.preco)}</div></div>`;
+            });
+            html += `</div>`;
+        }
+        return html;
+    }
+
+    function renderForm(){
+        let paisOptions = PAISES.map(p=>`<option value="${p.code}">${p.label}</option>`).join('');
+        const contatoBloco = `
+                <div class="form-row"><label>Como prefere receber a confirmação?</label><div class="radio-group" id="contatoGroup">
+                    <label><input type="radio" name="contato" value="WhatsApp" checked> WhatsApp</label>
+                    <label><input type="radio" name="contato" value="Email"> E-mail</label></div></div>
+                <div class="form-row" id="blocoWhats"><label>Telefone (WhatsApp)</label>
+                    <div class="tel-row"><select id="ddi">${paisOptions}</select><input type="tel" id="telefone" placeholder="(21) 99999-9999"></div></div>
+                <div class="form-row" id="blocoEmail" style="display:none;"><label>E-mail</label><input type="email" id="email" placeholder="nome@email.com"></div>`;
+
+        const bloco1 = temPre
+            ? `<div class="step-section"><div class="step-title">Sua reserva</div>
+                <div class="info-box" style="margin:0 0 16px; background:#eef3e6; border-left-color:var(--sage); color:#41502f;">
+                    <strong style="font-size:0.95rem;">${PRE.nome || '-'}</strong> &nbsp;·&nbsp; Quarto ${PRE.quarto || '-'}${(PRE.data||PRE.hora)?('<br>'+(PRE.data?fmtData(PRE.data):'')+(PRE.hora?(' às '+PRE.hora):'')):''}
+                </div>${contatoBloco}
+               </div>`
+            : `<div class="step-section"><div class="step-title">1. Seus dados</div>
+                <div class="form-row"><label>Nome completo</label><input type="text" id="nome" required></div>
+                <div class="form-row"><label>Número do quarto / reserva</label><input type="text" id="quarto" placeholder="Ex.: 204"></div>
+                <div class="form-row"><label>Você é</label><div class="radio-group">
+                    <label><input type="radio" name="perfil" value="Hóspede" checked> Hóspede</label>
+                    <label><input type="radio" name="perfil" value="Visitante"> Visitante</label></div></div>${contatoBloco}
+               </div>`;
+
+        const bloco3 = `<div class="step-section"><div class="step-title">${temPre?'Observações':'3. Data e horário desejado'}</div>
+                ${temPre?'':`<div class="form-row"><label>Data desejada</label><input type="date" id="data"></div>
+                <div class="form-row"><label>Horário desejado</label><input type="time" id="hora" value="15:00"><div class="hint">Sujeito à disponibilidade — a recepção confirma o melhor horário.</div></div>`}
+                <div class="form-row"><label>Observações</label><textarea id="obs" rows="2"></textarea></div>
+            </div>`;
+
+        document.getElementById('formContent').innerHTML = bloco1 + `
+            <div class="step-section"><div class="step-title">${temPre?'1':'2'}. Escolha a experiência</div>
+                ${renderServicos()}
+                <div class="form-row" id="duasPessoasRow" style="display:none; margin-top:14px;">
+                    <label class="chk"><input type="checkbox" id="duasPessoas"> Atendimento para 2 pessoas (casal)</label>
+                </div>
+            </div>` + bloco3 + `
+            <div class="step-section"><div class="step-title">${temPre?'2':'4'}. Ficha de anamnese</div>
+                <div id="anamneseBox"><div class="hint">Selecione uma experiência acima para carregar a ficha.</div></div>
+            </div>
+
+            <div class="form-row"><label class="chk"><input type="checkbox" id="aceite"> Li e concordo com as informações e políticas do SPA.</label></div>
+            <div class="btn-group">
+                <button type="button" class="btn-submit" id="enviarBtn">${temPre?'Enviar ficha':'Enviar solicitação'}</button>
+                <button type="button" class="btn-copy" id="copiarBtn">Copiar resumo</button>
+            </div>
+            <div id="feedback" class="feedback"></div>
+        `;
+
+        let hoje = new Date().toISOString().slice(0,10);
+        let dEl = document.getElementById('data'); if(dEl){ dEl.min = hoje; dEl.value = hoje; }
+
+        document.querySelectorAll('.serv').forEach(el=>el.addEventListener('click',()=>selecionarServico(el)));
+        document.querySelectorAll('input[name="contato"]').forEach(r=>r.addEventListener('change',toggleContato));
+        document.getElementById('duasPessoas')?.addEventListener('change',atualizarPreco);
+        document.getElementById('enviarBtn').addEventListener('click',enviar);
+        document.getElementById('copiarBtn').addEventListener('click',copiar);
+        toggleContato();
+    }
+
+    function selecionarServico(el){
+        let s=findServ(el.getAttribute('data-id')); if(!s) return;
+        let idx=servicosSel.indexOf(s);
+        if(idx>-1){ servicosSel.splice(idx,1); el.classList.remove('sel'); }
+        else {
+            if(totalDuracao()+(s.dur||0) > LIMITE_MIN){ mostrarFeedback('A soma dos tratamentos não pode passar de 2h ('+LIMITE_MIN+' min).','error'); return; }
+            servicosSel.push(s); el.classList.add('sel');
+        }
+        let temExtra=servicosSel.some(x=>x.dois||x.extraPessoa);
+        let row=document.getElementById('duasPessoasRow');
+        row.style.display = temExtra ? 'block' : 'none';
+        if(!temExtra){ let c=document.getElementById('duasPessoas'); if(c) c.checked=false; }
+        renderAnamnese();
+        atualizarPreco();
+    }
+
+    function montarResumo(){
+        let nome=getNome()||"-";
+        let quarto=getQuarto()||"-";
+        let perfil=document.querySelector('input[name="perfil"]:checked')?.value||"";
+        let metodo=metodoContato();
+        let contato = metodo==='Email' ? ("E-mail: "+(getEmail()||"-")) : ("WhatsApp: "+(getTel().display||"-"));
+        let data=fmtData(getData())||"-";
+        let hora=getHora()||"-";
+        let obs=document.getElementById('obs')?.value||"-";
+        let dois = (document.getElementById('duasPessoas')?.checked)?"Sim":"Não";
+        let m = "FICHA - SPA CASAS BRANCAS\n\n";
+        m += "Hóspede: "+nome+(perfil?(" ("+perfil+")"):"")+"\n";
+        m += "Quarto/Reserva: "+quarto+"\n";
+        m += contato+"\n\n";
+        m += "Experiência(s): "+(servicosSel.length?servicosSel.map(s=>s.nome+' ('+s.dur+'min)').join(' + '):"-")+"\n";
+        m += "Duração total: "+totalDuracao()+" min\n";
+        m += "Para 2 pessoas: "+dois+"\n";
+        m += "Valor estimado: "+brl(valorTotal())+"\n";
+        m += "Data: "+data+" às "+hora+"\n";
+        m += "Observações: "+obs+"\n";
+        m += "\n(Ficha de anamnese preenchida no formulário)";
+        return m;
+    }
+
+    function coletarAnamnese(){
+        let dados={ tipoFicha: tipoFicha() };
+        document.querySelectorAll('#anamneseBox input[type="radio"]:checked, #anamneseBox select, #anamneseBox input[type="text"]').forEach(el=>{
+            if(el.name) dados[el.name]=el.value; else if(el.id) dados[el.id]=el.value;
+        });
+        let cond=[]; document.querySelectorAll('#anamneseBox input[name="condicoes"]:checked').forEach(c=>cond.push(c.value));
+        let foco=[]; document.querySelectorAll('#anamneseBox input[name="foco"]:checked').forEach(c=>foco.push(c.value));
+        dados.condicoes=cond.join(', '); dados.foco=foco.join(', ');
+        return dados;
+    }
+
+    function mostrarFeedback(msg,tipo){ let f=document.getElementById('feedback'); f.textContent=msg; f.className='feedback '+tipo; setTimeout(()=>{f.className='feedback';},4500); }
+
+    async function enviar(){
+        let nome=getNome();
+        let metodo=metodoContato(); let tel=getTel(); let email=getEmail();
+        let contatoOk = metodo==='Email' ? emailOk(email) : (tel.numLen>=8);
+        if(!nome){ mostrarFeedback("Informe seu nome.","error"); return; }
+        if(!servicosSel.length){ mostrarFeedback("Escolha ao menos uma experiência.","error"); return; }
+        if(!contatoOk){ mostrarFeedback(metodo==='Email'?"Informe um e-mail válido.":"Informe um telefone válido.","error"); return; }
+        if(!document.getElementById('aceite')?.checked){ mostrarFeedback("É preciso aceitar as políticas.","error"); return; }
+
+        let dados = {
+            id: PRE.id || Date.now(),
+            nome: getNome(),
+            quarto: getQuarto(),
+            perfil: document.querySelector('input[name="perfil"]:checked')?.value||"",
+            contato: metodo,
+            telefone: metodo==='WhatsApp'?tel.sheet:"",
+            email: metodo==='Email'?email:"",
+            servico: servicosSel.map(s=>s.nome).join('; '), duracao: totalDuracao(),
+            duasPessoas: document.getElementById('duasPessoas')?.checked?"Sim":"Não",
+            valorTotal: valorTotal(),
+            data: getData(),
+            horario: getHora(),
+            obs: document.getElementById('obs')?.value||"",
+            anamnese: JSON.stringify(coletarAnamnese())
+        };
+        if(PRE.id){ dados.action='update'; dados.status='active'; }
+
+        mostrarFeedback("Enviando...","success");
+        if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){
+            try{ await fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)}); }catch(e){}
+        }
+        let msg=montarResumo();
+        if(metodo==='Email'){
+            window.location.href = "mailto:"+SPA_EMAIL+"?subject="+encodeURIComponent("Reserva SPA - "+nome)+"&body="+encodeURIComponent(msg);
+        } else {
+            window.open("https://wa.me/"+SPA_WHATSAPP+"?text="+encodeURIComponent(msg),"_blank");
+      

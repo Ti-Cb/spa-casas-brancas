@@ -118,7 +118,9 @@
     };
     // Comissão do massoterapeuta = 28% do valor da massagem (conforme a planilha do SPA).
     const PCT_COMISSAO = 0.28;
-    const PLANTAO_VALOR = 150;
+    const PLANTAO_PADRAO = 150;
+    const PLANTAO_POR = { "Tasso": 250 };   // líder recebe mais; demais usam o padrão
+    function valorPlantao(n){ return PLANTAO_POR[n] || PLANTAO_PADRAO; }
     function comissionavel(servico){ let s=(servico||'').toString().toLowerCase().trim(); if(s==='yoga') return false; return !['reiki','pilates','gds','osteo'].some(x=>s.indexOf(x)>-1); }
     function comissaoDe(t){ return comissionavel(t["Servico"]) ? Math.round((parseFloat(t["ValorTotal"])||0)*PCT_COMISSAO) : 0; }
 
@@ -259,11 +261,11 @@
         let rows=lista.map(t=>{ let c=comissaoDe(t); totalMass+=c; return `<tr><td>${fmtData(t["Data"])}</td><td>${t["Servico"]||'-'}</td><td>${t["Nome"]||'-'}</td><td style="text-align:right;">${c?brl(c):'—'}</td></tr>`; }).join('');
         let hojeFim=new Date(); hojeFim.setHours(23,59,59,0);
         let pdias=plantoes.filter(k=>{ let dt=new Date(k); return !isNaN(dt) && dt<=hojeFim && noPeriodo({Data:k},p); });
-        let comPlant=pdias.length*PLANTAO_VALOR;
+        let comPlant=pdias.length*valorPlantao(nome);
         let plantRow = pdias.length?`<tr><td>${pdias.length}× plantão</td><td>Plantão</td><td>—</td><td style="text-align:right;">${brl(comPlant)}</td></tr>`:'';
         let total=totalMass+comPlant;
         document.getElementById('comTotal').innerText=brl(total);
-        document.getElementById('comQtd').innerText=lista.length+' massagem(ns) (28%) · '+pdias.length+' plantão(ões) (R$ 150 cada)';
+        document.getElementById('comQtd').innerText=lista.length+' massagem(ns) (28%) · '+pdias.length+' plantão(ões) ('+brl(valorPlantao(nome))+' cada)';
         document.getElementById('comLista').innerHTML=`<table><thead><tr><th>Data</th><th>Serviço</th><th>Hóspede</th><th style="text-align:right;">Comissão</th></tr></thead><tbody>${rows}${plantRow}${(!rows&&!plantRow)?'<tr><td colspan=4 class="vazio">Nada no período.</td></tr>':''}</tbody></table>`;
     }
     document.querySelectorAll('.pbtn').forEach(b=>b.addEventListener('click',()=>renderCom(b.getAttribute('data-p'))));
@@ -272,9 +274,4 @@
     document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
         let t=b.getAttribute('data-t');
         document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('on')); b.classList.add('on');
-        document.querySelectorAll('.tabc').forEach(x=>x.classList.remove('on')); document.getElementById('tab-'+t).classList.add('on');
-        document.getElementById('barra').style.display = (t==='disp')?'block':'none';
-    }));
-</script>
-</body>
-</html>
+        document.querySelectorAll('.tabc').forEach(x=>x.classList.re

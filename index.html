@@ -409,4 +409,15 @@
             window.location.href = "mailto:"+SPA_EMAIL+"?subject="+encodeURIComponent("Reserva SPA - "+nome)+"&body="+encodeURIComponent(msg);
         } else {
             window.open("https://wa.me/"+SPA_WHATSAPP+"?text="+encodeURIComponent(msg),"_blank");
-      
+        }
+        document.getElementById('sucessoOverlay').classList.add('show');
+    }
+    function copiar(){ if(!servicoSel){ mostrarFeedback("Escolha uma experiência.","error"); return;} navigator.clipboard.writeText(montarResumo()); mostrarFeedback("Resumo copiado!","success"); }
+
+    document.getElementById('enviarBtnBar').addEventListener('click',enviar);
+    document.getElementById('novaBtn').addEventListener('click',()=>{ document.getElementById('sucessoOverlay').classList.remove('show'); servicoSel=null; renderForm(); renderAnamnese(); atualizarPreco(); window.scrollTo({top:0,behavior:'smooth'}); });
+
+    renderForm();
+</script>
+</body>
+</html>

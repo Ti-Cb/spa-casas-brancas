@@ -393,4 +393,11 @@
     document.getElementById('limparBtn').addEventListener('click',()=>{ document.getElementById('fBusca').value=''; document.getElementById('fData').value=''; document.getElementById('fStatus').value='todos'; document.getElementById('fTerapeuta').value='todos'; renderLista(); });
     document.getElementById('eCancelar').addEventListener('click',()=>document.getElementById('editOv').classList.remove('show'));
     document.getElementById('eSalvar').addEventListener('click',salvarEdit);
-    document.getElementById(
+    document.getElementById('anamFechar').addEventListener('click',()=>document.getElementById('anamOv').classList.remove('show'));
+    document.getElementById('autoRefresh').addEventListener('change',()=>{ if(autoTimer){clearInterval(autoTimer);autoTimer=null;} if(document.getElementById('autoRefresh').checked)autoTimer=setInterval(carregar,5*60*1000); });
+
+    autoTimer=setInterval(carregar,5*60*1000);
+    carregar();
+</script>
+</body>
+</html>

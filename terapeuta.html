@@ -259,8 +259,7 @@
         let lista=reservas.filter(t=>getStatus(t)==='completed' && noPeriodo(t,p)).sort((a,b)=>new Date(a["Data"])-new Date(b["Data"]));
         let totalMass=0;
         let rows=lista.map(t=>{ let c=comissaoDe(t); totalMass+=c; return `<tr><td>${fmtData(t["Data"])}</td><td>${t["Servico"]||'-'}</td><td>${t["Nome"]||'-'}</td><td style="text-align:right;">${c?brl(c):'—'}</td></tr>`; }).join('');
-        let hojeFim=new Date(); hojeFim.setHours(23,59,59,0);
-        let pdias=plantoes.filter(k=>{ let dt=new Date(k); return !isNaN(dt) && dt<=hojeFim && noPeriodo({Data:k},p); });
+        let pdias=plantoes.filter(k=>{ let dt=new Date(k); return !isNaN(dt) && noPeriodo({Data:k},p); });
         let comPlant=pdias.length*valorPlantao(nome);
         let plantRow = pdias.length?`<tr><td>${pdias.length}× plantão</td><td>Plantão</td><td>—</td><td style="text-align:right;">${brl(comPlant)}</td></tr>`:'';
         let total=totalMass+comPlant;

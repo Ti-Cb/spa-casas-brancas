@@ -274,4 +274,9 @@
     document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
         let t=b.getAttribute('data-t');
         document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('on')); b.classList.add('on');
-        document.querySelectorAll('.tabc').forEach(x=>x.classList.re
+        document.querySelectorAll('.tabc').forEach(x=>x.classList.remove('on')); document.getElementById('tab-'+t).classList.add('on');
+        document.getElementById('barra').style.display = (t==='disp')?'block':'none';
+    }));
+</script>
+</body>
+</html>

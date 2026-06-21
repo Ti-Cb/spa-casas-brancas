@@ -195,7 +195,8 @@
     function fData(v){ if(!v)return"-"; let d=new Date(v); return isNaN(d)?"-":(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()); }
     function hora(t){ let h=(t["Horario"]||'').toString(); let m=h.match(/(\d{1,2}):(\d{2})/); return m?(m[1].padStart(2,'0')+':'+m[2]):(h||'-'); }
     function waPhone(tel){ let d=(tel||'').toString().replace(/\D/g,''); if(!d)return''; if(d.startsWith('55')&&d.length>=12)return d; if(d.length===10||d.length===11)return '55'+d; return d; }
-    function porId(id){ return reservas.find(x=>(x["ID"]||'').toString()===(id||'').toString()); }
+    function idOf(t){ return (t["Id"]||t["ID"]||t["id"]||'').toString(); }
+    function porId(id){ id=(id||'').toString(); return reservas.find(x=>idOf(x)===id); }
     function post(id,campos){ try{ fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:'update',id:id},campos))}); }catch(e){console.error(e);} }
 
     async function carregar(){
@@ -267,26 +268,35 @@
             html+=`<tr class="month-group"><td colspan="10"><strong>${g}</strong> (${itens.length})</td></tr>`;
             itens.forEach(t=>{
                 let s=getStatus(t), rc=isCanc(t)?'cancelled-row':(isDone(t)?'completed-row':'');
-                let jt=JSON.stringify(t).replace(/"/g,'&quot;');
                 let dis=isCanc(t)||isDone(t);
+                let _id=idOf(t);
                 html+=`<tr class="${rc}">
                     <td>${fData(t["Data"])}</td><td><b>${hora(t)}</b></td><td>${t["Nome"]||'-'}</td>
                     <td>${t["Quarto"]||'-'}</td><td>${t["Servico"]||'-'}${t["DuasPessoas"]==='Sim'?' <span class="tag" style="color:#51604a;background:#eef3e6;">2p</span>':''}</td>
                     <td>${t["Duracao"]||'-'}min</td><td>${t["Terapeuta"]||'<span style="color:#b08;">(definir)</span>'}</td>
                     <td>${t["Sala"]||'-'}</td><td>${brl(t["ValorTotal"])}</td>
                     <td style="white-space:nowrap;">
-                        <button class="btn btn-ficha" onclick='verFicha(${jt})'>Ficha</button>
-                        <button class="btn btn-edit" onclick='abrirEdit(${jt})' ${isCanc(t)?'disabled':''}>Editar</button>
-                        <button class="btn btn-wa" onclick='confirmar(${jt})' ${dis?'disabled':''}>Confirmar</button>
-                        <button class="btn btn-fim" onclick='marcar(${jt},"completed")' ${dis?'disabled':''}>Finalizar</button>
-                        <button class="btn btn-canc" onclick='marcar(${jt},"cancelled")' ${isCanc(t)?'disabled':''}>Cancelar</button>
+                        <button class="btn btn-ficha" data-act="ficha" data-id="${_id}">Ficha</button>
+                        <button class="btn btn-edit" data-act="edit" data-id="${_id}" ${isCanc(t)?'disabled':''}>Editar</button>
+                        <button class="btn btn-wa" data-act="confirmar" data-id="${_id}" ${dis?'disabled':''}>Confirmar</button>
+                        <button class="btn btn-fim" data-act="completed" data-id="${_id}" ${dis?'disabled':''}>Finalizar</button>
+                        <button class="btn btn-canc" data-act="cancelled" data-id="${_id}" ${isCanc(t)?'disabled':''}>Cancelar</button>
                     </td></tr>`;
             });
         }
         tb.innerHTML=html;
+        tb.querySelectorAll('button[data-act]').forEach(b=>b.addEventListener('click',()=>{
+            let t=porId(b.dataset.id); if(!t)return;
+            let a=b.dataset.act;
+            if(a==='ficha')verFicha(t);
+            else if(a==='edit')abrirEdit(t);
+            else if(a==='confirmar')confirmar(t);
+            else if(a==='completed')marcar(t,'completed');
+            else if(a==='cancelled')marcar(t,'cancelled');
+        }));
     }
 
-    function marcar(t,st){ let it=porId(t["ID"])||t; it["Status"]=st; post(it["ID"],{status:st}); renderLista(); renderProximos(); renderConflitos(); renderFinanceiro(periodo); }
+    function marcar(t,st){ t["Status"]=st; post(idOf(t),{status:st}); renderLista(); renderProximos(); renderConflitos(); renderFinanceiro(periodo); }
 
     function confirmar(t){
         let data=fData(t["Data"]), h=hora(t);
@@ -320,7 +330,7 @@
     }
 
     function abrirEdit(t){
-        editando=porId(t["ID"])||t;
+        editando=t;
         document.getElementById('editResumo').innerText=(editando["Nome"]||'-')+' · '+(editando["Servico"]||'-');
         document.getElementById('eData').value=(editando["Data"]||'').toString().slice(0,10);
         document.getElementById('eHora').value=hora(editando)==='-'?'':hora(editando);
@@ -333,7 +343,7 @@
         if(!editando)return;
         let campos={ data:document.getElementById('eData').value, horario:document.getElementById('eHora').value, terapeuta:document.getElementById('eTer').value, sala:document.getElementById('eSala').value, valorTotal:parseFloat(document.getElementById('eValor').value)||0, status:(getStatus(editando)==='active'?'confirmed':getStatus(editando)) };
         Object.assign(editando,{Data:campos.data,Horario:campos.horario,Terapeuta:campos.terapeuta,Sala:campos.sala,ValorTotal:campos.valorTotal,Status:campos.status});
-        post(editando["ID"],campos);
+        post(idOf(editando),campos);
         document.getElementById('editOv').classList.remove('show');
         renderLista(); renderProximos(); renderConflitos(); renderFinanceiro(periodo);
     }
@@ -395,6 +405,33 @@
     document.getElementById('eSalvar').addEventListener('click',salvarEdit);
     document.getElementById('anamFechar').addEventListener('click',()=>document.getElementById('anamOv').classList.remove('show'));
     document.getElementById('autoRefresh').addEventListener('change',()=>{ if(autoTimer){clearInterval(autoTimer);autoTimer=null;} if(document.getElementById('autoRefresh').checked)autoTimer=setInterval(carregar,5*60*1000); });
+
+    // ===== NOVO AGENDAMENTO (recepção gera a ficha pré-preenchida) =====
+    document.getElementById('novoBtn').addEventListener('click',()=>{
+        document.getElementById('linkBox').style.display='none';
+        ['novoNome','novoQuarto','novoSala'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('novoTer').value='';
+        document.getElementById('novoData').value=new Date().toISOString().slice(0,10);
+        document.getElementById('novoHora').value='14:30';
+        document.getElementById('novoOv').classList.add('show');
+    });
+    document.getElementById('novoFechar').addEventListener('click',()=>document.getElementById('novoOv').classList.remove('show'));
+    document.getElementById('novoGerar').addEventListener('click',()=>{
+        let data=document.getElementById('novoData').value, hora=document.getElementById('novoHora').value.trim();
+        let nome=document.getElementById('novoNome').value.trim(), quarto=document.getElementById('novoQuarto').value.trim();
+        let ter=document.getElementById('novoTer').value, sala=document.getElementById('novoSala').value.trim();
+        if(!data||!hora||!nome){ alert('Preencha data, horário e nome.'); return; }
+        let id=Date.now();
+        if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){
+            try{ fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,nome:nome,quarto:quarto,data:data,horario:hora,terapeuta:ter,sala:sala,status:'aguardando_ficha'})}); }catch(e){}
+        }
+        let link=FICHA_URL+'?id='+id+'&nome='+encodeURIComponent(nome)+'&quarto='+encodeURIComponent(quarto)+'&data='+data+'&hora='+encodeURIComponent(hora);
+        document.getElementById('linkInput').value=link;
+        document.getElementById('linkBox').style.display='block';
+        setTimeout(carregar,1500);
+    });
+    document.getElementById('copiarLink').addEventListener('click',()=>{ let i=document.getElementById('linkInput'); i.select(); try{navigator.clipboard.writeText(i.value);}catch(e){} });
+    document.getElementById('abrirLink').addEventListener('click',()=>{ window.open(document.getElementById('linkInput').value,'_blank'); });
 
     autoTimer=setInterval(carregar,5*60*1000);
     carregar();

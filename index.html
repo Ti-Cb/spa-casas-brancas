@@ -109,7 +109,9 @@
     const temPre = !!(PRE.nome || PRE.data || PRE.hora || PRE.quarto);
     function fmtData(v){ if(!v) return ''; let m=v.toString().match(/(\d{4})-(\d{2})-(\d{2})/); return m?(m[3]+'/'+m[2]+'/'+m[1]):v; }
     function getNome(){ return PRE.nome || (document.getElementById('nome')?.value||'').trim(); }
-    function getQuarto(){ return PRE.quarto || (document.getElementById('quarto')?.value||''); }
+    function getQuarto(){ if(ehVisitante()) return ''; return PRE.quarto || (document.getElementById('quarto')?.value||''); }
+    function ehVisitante(){ return document.querySelector('input[name="perfil"]:checked')?.value==='Visitante'; }
+    function togglePerfil(){ let row=document.getElementById('quartoRow'); if(!row)return; let vis=ehVisitante(); row.style.display=vis?'none':''; let q=document.getElementById('quarto'); if(q&&vis)q.value=''; }
     function getData(){ return PRE.data || (document.getElementById('data')?.value||''); }
     function getHora(){ return PRE.hora || (document.getElementById('hora')?.value||''); }
 
@@ -278,10 +280,10 @@
                </div>`
             : `<div class="step-section"><div class="step-title">1. Seus dados</div>
                 <div class="form-row"><label>Nome completo</label><input type="text" id="nome" required></div>
-                <div class="form-row"><label>Número do quarto / reserva</label><input type="text" id="quarto" placeholder="Ex.: 204"></div>
                 <div class="form-row"><label>Você é</label><div class="radio-group">
                     <label><input type="radio" name="perfil" value="Hóspede" checked> Hóspede</label>
-                    <label><input type="radio" name="perfil" value="Visitante"> Visitante</label></div></div>${contatoBloco}
+                    <label><input type="radio" name="perfil" value="Visitante"> Visitante</label></div></div>
+                <div class="form-row" id="quartoRow"><label>Número do quarto / reserva</label><input type="text" id="quarto" placeholder="Ex.: 204"></div>${contatoBloco}
                </div>`;
 
         const bloco3 = `<div class="step-section"><div class="step-title">${temPre?'Observações':'3. Data e horário desejado'}</div>
@@ -314,10 +316,12 @@
 
         document.querySelectorAll('.serv').forEach(el=>el.addEventListener('click',()=>selecionarServico(el)));
         document.querySelectorAll('input[name="contato"]').forEach(r=>r.addEventListener('change',toggleContato));
+        document.querySelectorAll('input[name="perfil"]').forEach(r=>r.addEventListener('change',togglePerfil));
         document.getElementById('duasPessoas')?.addEventListener('change',atualizarPreco);
         document.getElementById('enviarBtn').addEventListener('click',enviar);
         document.getElementById('copiarBtn').addEventListener('click',copiar);
         toggleContato();
+        togglePerfil();
     }
 
     function selecionarServico(el){
@@ -412,10 +416,10 @@
         }
         document.getElementById('sucessoOverlay').classList.add('show');
     }
-    function copiar(){ if(!servicoSel){ mostrarFeedback("Escolha uma experiência.","error"); return;} navigator.clipboard.writeText(montarResumo()); mostrarFeedback("Resumo copiado!","success"); }
+    function copiar(){ if(!servicosSel.length){ mostrarFeedback("Escolha uma experiência.","error"); return;} navigator.clipboard.writeText(montarResumo()); mostrarFeedback("Resumo copiado!","success"); }
 
     document.getElementById('enviarBtnBar').addEventListener('click',enviar);
-    document.getElementById('novaBtn').addEventListener('click',()=>{ document.getElementById('sucessoOverlay').classList.remove('show'); servicoSel=null; renderForm(); renderAnamnese(); atualizarPreco(); window.scrollTo({top:0,behavior:'smooth'}); });
+    document.getElementById('novaBtn').addEventListener('click',()=>{ document.getElementById('sucessoOverlay').classList.remove('show'); servicosSel=[]; renderForm(); window.scrollTo({top:0,behavior:'smooth'}); });
 
     renderForm();
 </script>

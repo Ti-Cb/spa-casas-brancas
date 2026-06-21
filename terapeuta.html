@@ -266,4 +266,15 @@
         document.getElementById('comQtd').innerText=lista.length+' massagem(ns) (28%) · '+pdias.length+' plantão(ões) (R$ 150 cada)';
         document.getElementById('comLista').innerHTML=`<table><thead><tr><th>Data</th><th>Serviço</th><th>Hóspede</th><th style="text-align:right;">Comissão</th></tr></thead><tbody>${rows}${plantRow}${(!rows&&!plantRow)?'<tr><td colspan=4 class="vazio">Nada no período.</td></tr>':''}</tbody></table>`;
     }
-    document.querySelectorAll('.pbtn').forEach(b=>b.addEvent
+    document.querySelectorAll('.pbtn').forEach(b=>b.addEventListener('click',()=>renderCom(b.getAttribute('data-p'))));
+
+    // ===== TABS =====
+    document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
+        let t=b.getAttribute('data-t');
+        document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+        document.querySelectorAll('.tabc').forEach(x=>x.classList.remove('on')); document.getElementById('tab-'+t).classList.add('on');
+        document.getElementById('barra').style.display = (t==='disp')?'block':'none';
+    }));
+</script>
+</body>
+</html>

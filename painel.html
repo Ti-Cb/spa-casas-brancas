@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>SPA Casas Brancas — Painel</title>
     <meta name="theme-color" content="#51604a">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         :root { --sage:#6f7d63; --sage-d:#51604a; --sand:#b9a17c; --sand-d:#9c8763; --ink:#34362f; }
@@ -166,6 +167,8 @@
             <button class="btn btn-main" id="copiarLink" style="flex:1;">Copiar link</button>
             <button class="btn btn-main" id="abrirLink" style="flex:1; background:#9c8763;">Abrir ficha</button>
         </div>
+        <div id="qrBox" style="text-align:center; margin-top:12px;"></div>
+        <div style="font-size:0.72rem;color:#51604a;text-align:center;margin-top:4px;">O hóspede pode escanear o QR code para abrir a ficha.</div>
     </div>
     <div class="ov-acoes">
         <button style="background:transparent;color:#6b7560;border:1px solid #cfd4c4 !important;" id="novoFechar">Fechar</button>
@@ -425,9 +428,13 @@
         if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){
             try{ fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,nome:nome,quarto:quarto,data:data,horario:hora,terapeuta:ter,sala:sala,status:'aguardando_ficha'})}); }catch(e){}
         }
-        let link=FICHA_URL+'?id='+id+'&nome='+encodeURIComponent(nome)+'&quarto='+encodeURIComponent(quarto)+'&data='+data+'&hora='+encodeURIComponent(hora);
+        let rel=FICHA_URL+'?id='+id+'&nome='+encodeURIComponent(nome)+'&quarto='+encodeURIComponent(quarto)+'&data='+data+'&hora='+encodeURIComponent(hora);
+        let link=new URL(rel, location.href).href;
         document.getElementById('linkInput').value=link;
         document.getElementById('linkBox').style.display='block';
+        let qb=document.getElementById('qrBox'); qb.innerHTML='';
+        try{ new QRCode(qb,{text:link,width:170,height:170,correctLevel:QRCode.CorrectLevel.M}); }
+        catch(e){ qb.innerHTML='<img alt="QR" src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data='+encodeURIComponent(link)+'">'; }
         setTimeout(carregar,1500);
     });
     document.getElementById('copiarLink').addEventListener('click',()=>{ let i=document.getElementById('linkInput'); i.select(); try{navigator.clipboard.writeText(i.value);}catch(e){} });

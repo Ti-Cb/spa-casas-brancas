@@ -286,9 +286,8 @@
                 <div class="form-row" id="quartoRow"><label>Número do quarto / reserva</label><input type="text" id="quarto" placeholder="Ex.: 204"></div>${contatoBloco}
                </div>`;
 
-        const bloco3 = `<div class="step-section"><div class="step-title">${temPre?'Observações':'3. Data e horário desejado'}</div>
-                ${temPre?'':`<div class="form-row"><label>Data desejada</label><input type="date" id="data"></div>
-                <div class="form-row"><label>Horário desejado</label><input type="time" id="hora" value="15:00"><div class="hint">Sujeito à disponibilidade — a recepção confirma o melhor horário.</div></div>`}
+        const bloco3 = `<div class="step-section"><div class="step-title">${temPre?'Observações':'3. Data desejada'}</div>
+                ${temPre?'':`<div class="form-row"><label>Data desejada</label><input type="date" id="data"><div class="hint">A recepção confirma o melhor horário disponível.</div></div>`}
                 <div class="form-row"><label>Observações</label><textarea id="obs" rows="2"></textarea></div>
             </div>`;
 

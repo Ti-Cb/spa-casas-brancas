@@ -74,6 +74,10 @@
 </div>
 
 <div class="wrap" id="app" style="display:none;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button onclick="history.length>1?history.back():location.href='menu.html'" style="background:#fff;border:1px solid #d8cbb0;color:#8a7a55;padding:8px 14px;border-radius:40px;cursor:pointer;font-weight:600;font-size:0.82rem;">‹ Voltar</button>
+        <a href="menu.html" style="background:#fff;border:1px solid #d8cbb0;color:#8a7a55;padding:8px 14px;border-radius:40px;text-decoration:none;font-weight:600;font-size:0.82rem;">⌂ Início</a>
+    </div>
     <div class="topo">
         <div class="avatar" id="avatar"></div>
         <div><h1 id="ola">Olá!</h1><div class="sub" id="subTopo">Sua área no SPA</div></div>
@@ -218,13 +222,27 @@
         if(s==='confirmed'||s==='active')return{l:'Confirmado',c:'color:#51604a;background:#eef3e6'};
         return{l:'Aguardando ficha',c:'color:#8a6d1b;background:#fff3cd'};
     }
+    function idT(t){ return (t["Id"]||t["ID"]||t["id"]||'').toString(); }
     function renderAgend(){
         let dia=document.getElementById('agData').value;
         let lista=reservas.filter(t=>getStatus(t)!=='cancelled' && (t["Data"]||'').toString().slice(0,10)===dia).sort((a,b)=>hora(a).localeCompare(hora(b)));
         if(!lista.length){ document.getElementById('agLista').innerHTML='<div class="vazio">Nenhum atendimento neste dia.</div>'; return; }
-        document.getElementById('agLista').innerHTML=lista.map(t=>{ let si=statusInfo(t); let jt=JSON.stringify(t).replace(/"/g,'&quot;');
-            return `<div class="ag"><div><div class="h">${hora(t)}</div><div class="n">${t["Nome"]||'-'} <span class="tag" style="${si.c}">${si.l}</span></div><div class="s">${t["Servico"]||'-'} · Quarto ${t["Quarto"]||'-'}</div></div><button class="vf" onclick='verFicha(${jt})'>Ver ficha</button></div>`;
+        document.getElementById('agLista').innerHTML=lista.map(t=>{ let si=statusInfo(t); let _id=idT(t);
+            let resp=(t["RespTerapeuta"]||'').toString();
+            let respTag = resp ? `<span class="tag" style="${/recus/i.test(resp)?'color:#b85c5a;background:#faecec':'color:#2f7d8c;background:#e6f0f2'}">${resp} por você</span>` : '';
+            let btnConf = (/confirm/i.test(resp)) ? '' : `<button class="vf" style="background:var(--sage);color:#fff;border-color:var(--sage);" data-act="confirmar" data-id="${_id}">Confirmar</button>`;
+            return `<div class="ag"><div><div class="h">${hora(t)}</div><div class="n">${t["Nome"]||'-'} <span class="tag" style="${si.c}">${si.l}</span> ${respTag}</div><div class="s">${t["Servico"]||'-'} · Quarto ${t["Quarto"]||'-'}</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">${btnConf}<button class="vf" data-act="ficha" data-id="${_id}">Ver ficha</button></div></div>`;
         }).join('');
+        document.getElementById('agLista').querySelectorAll('button[data-act]').forEach(b=>b.addEventListener('click',()=>{
+            let t=reservas.find(x=>idT(x)===b.dataset.id); if(!t)return;
+            if(b.dataset.act==='ficha') verFicha(t);
+            else if(b.dataset.act==='confirmar') responder(t);
+        }));
+    }
+    function responder(t){
+        t["RespTerapeuta"]='Confirmado';
+        if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){ try{ fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'respostaTerapeuta',id:idT(t),resposta:'Confirmado'})}); }catch(e){} }
+        renderAgend();
     }
     document.getElementById('agData').addEventListener('change',renderAgend);
 

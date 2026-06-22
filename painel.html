@@ -79,6 +79,10 @@
 </script>
 
 <div class="container">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button onclick="history.length>1?history.back():location.href='menu.html'" style="background:#fff;border:1px solid #d8cbb0;color:#8a7a55;padding:8px 16px;border-radius:40px;cursor:pointer;font-weight:600;">‹ Voltar</button>
+        <a href="menu.html" style="background:#fff;border:1px solid #d8cbb0;color:#8a7a55;padding:8px 16px;border-radius:40px;text-decoration:none;font-weight:600;">⌂ Início</a>
+    </div>
     <div class="topo">
         <div><h1>Painel da Recepção — SPA</h1><div class="sub">Agenda, atendimentos e financeiro</div></div>
         <img src="spa-logo-white.png" alt="SPA">
@@ -100,6 +104,7 @@
 
     <div id="tab-agenda" class="tab-content active">
         <div style="margin-bottom:16px;"><button class="btn btn-main" id="novoBtn">+ Novo agendamento</button></div>
+        <div id="avisosBox" class="conflito"></div>
         <div id="conflitosBox" class="conflito"></div>
         <div class="table-container"><h3>Próximos atendimentos</h3><div id="proximos" style="margin-top:12px;">Carregando...</div></div>
         <div class="table-container">
@@ -208,7 +213,7 @@
             const r=await fetch(WEBAPP_URL); const d=await r.json();
             reservas=Array.isArray(d)?d:[];
             document.getElementById('lastUpdate').innerText='Atualizado: '+new Date().toLocaleString('pt-BR')+' ('+reservas.length+')';
-            renderConflitos(); renderProximos(); renderLista(); renderFinanceiro(periodo);
+            renderConflitos(); renderAvisos(); renderProximos(); renderLista(); renderFinanceiro(periodo);
         }catch(e){ let el=document.getElementById('errorDisplay'); el.style.display='block'; el.innerText='Erro ao carregar: '+e.message; }
     }
 
@@ -247,6 +252,18 @@
         box.innerHTML='<strong>⚠️ Conflitos de agenda ('+conf.length+')</strong>'+conf.map(c=>`<div style="margin-top:6px;font-size:0.85rem;">${c.motivo} — ${fData(c.a["Data"])} <b>${hora(c.a)}</b>: ${c.a["Nome"]||'-'} ↔ ${c.b["Nome"]||'-'}</div>`).join('');
     }
 
+    function renderAvisos(){
+        let box=document.getElementById('avisosBox'); if(!box) return;
+        let agora=new Date(); let hojeK=keyOf(agora); let nowMin=agora.getHours()*60+agora.getMinutes();
+        let semConf=reservas.filter(t=>!isCanc(t)&&!isDone(t)&&dataKey(t)===hojeK&&minutos(t)!=null&&!/confirm/i.test((t["RespTerapeuta"]||''))&&(minutos(t)-nowMin)>=0&&(minutos(t)-nowMin)<=30);
+        let canc=reservas.filter(t=>isCanc(t)&&dataKey(t)===hojeK);
+        let html='';
+        if(semConf.length) html+='<div><strong>⏰ '+semConf.length+' atendimento(s) em até 30 min sem confirmação do terapeuta:</strong>'+semConf.map(t=>`<div style="font-size:0.85rem;margin-top:4px;">${hora(t)} · ${t["Nome"]||'-'} · ${t["Terapeuta"]||'(definir)'}</div>`).join('')+'</div>';
+        if(canc.length) html+='<div style="margin-top:'+(semConf.length?'10px':'0')+';"><strong>🚫 '+canc.length+' cancelamento(s) hoje:</strong>'+canc.map(t=>`<div style="font-size:0.85rem;margin-top:4px;">${hora(t)} · ${t["Nome"]||'-'} · ${t["Servico"]||'-'}</div>`).join('')+'</div>';
+        if(!html){ box.style.display='none'; box.innerHTML=''; return; }
+        box.style.display='block'; box.style.background='#fff3e0'; box.style.borderColor='#e0a060'; box.style.color='#8a5a1b'; box.innerHTML=html;
+    }
+
     function filtros(){ return { busca:(document.getElementById('fBusca').value||'').toLowerCase().trim(), data:document.getElementById('fData').value||'', status:document.getElementById('fStatus').value, ter:document.getElementById('fTerapeuta').value }; }
 
     function renderLista(){
@@ -276,7 +293,7 @@
                 html+=`<tr class="${rc}">
                     <td>${fData(t["Data"])}</td><td><b>${hora(t)}</b></td><td>${t["Nome"]||'-'}</td>
                     <td>${t["Quarto"]||'-'}</td><td>${t["Servico"]||'-'}${t["DuasPessoas"]==='Sim'?' <span class="tag" style="color:#51604a;background:#eef3e6;">2p</span>':''}</td>
-                    <td>${t["Duracao"]||'-'}min</td><td>${t["Terapeuta"]||'<span style="color:#b08;">(definir)</span>'}</td>
+                    <td>${t["Duracao"]||'-'}min</td><td>${t["Terapeuta"]||'<span style="color:#b08;">(definir)</span>'}${t["RespTerapeuta"]?'<br><span style="font-size:0.66rem;'+(/recus/i.test(t["RespTerapeuta"])?'color:#b85c5a;':'color:#2f7d8c;')+'">'+(/recus/i.test(t["RespTerapeuta"])?'✗ recusou':'✓ confirmou')+'</span>':''}</td>
                     <td>${t["Sala"]||'-'}</td><td>${brl(t["ValorTotal"])}</td>
                     <td style="white-space:nowrap;">
                         <button class="btn btn-ficha" data-act="ficha" data-id="${_id}">Ficha</button>
@@ -441,6 +458,7 @@
     document.getElementById('abrirLink').addEventListener('click',()=>{ window.open(document.getElementById('linkInput').value,'_blank'); });
 
     autoTimer=setInterval(carregar,5*60*1000);
+    setInterval(renderAvisos,60*1000);
     carregar();
 </script>
 </body>

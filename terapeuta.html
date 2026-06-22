@@ -139,7 +139,7 @@
     // ===== PWA: manifesto individual por terapeuta + service worker =====
     if(cfg){
         try{
-            var _m={ name:'SPA — '+nome, short_name:nome, start_url:'terapeuta.html?t='+encodeURIComponent(nome)+'&from=app', scope:'./', display:'standalone', orientation:'portrait', background_color:'#eef0e8', theme_color:'#51604a',
+            var _m={ name:'SPA Casas Brancas Agenda', short_name:'SPA Agenda', start_url:'terapeuta.html?t='+encodeURIComponent(nome)+'&from=app', scope:'./', display:'standalone', orientation:'portrait', background_color:'#eef0e8', theme_color:'#51604a',
                 icons:[{src:'icon-spa-192.png',sizes:'192x192',type:'image/png'},{src:'icon-spa-512.png',sizes:'512x512',type:'image/png'},{src:'icon-spa-maskable.png',sizes:'512x512',type:'image/png',purpose:'maskable'}] };
             var _b=new Blob([JSON.stringify(_m)],{type:'application/manifest+json'});
             var _l=document.createElement('link'); _l.rel='manifest'; _l.href=URL.createObjectURL(_b); document.head.appendChild(_l);

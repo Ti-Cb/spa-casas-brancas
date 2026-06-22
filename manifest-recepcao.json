@@ -1,6 +1,6 @@
 {
-  "name": "Recepção — Casas Brancas Spa",
-  "short_name": "SPA Recepção",
+  "name": "SPA Casas Brancas",
+  "short_name": "SPA Casas Brancas",
   "description": "Painel completo da recepção do Spa Casas Brancas.",
   "start_url": "menu.html",
   "scope": "./",

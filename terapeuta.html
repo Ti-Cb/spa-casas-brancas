@@ -74,7 +74,7 @@
 </div>
 
 <div class="wrap" id="app" style="display:none;">
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <div id="navMenu" style="display:none;gap:8px;margin-bottom:12px;">
         <button onclick="history.length>1?history.back():location.href='menu.html'" style="background:#fff;border:1px solid #d8cbb0;color:#8a7a55;padding:8px 14px;border-radius:40px;cursor:pointer;font-weight:600;font-size:0.82rem;">‹ Voltar</button>
         <a href="menu.html" style="background:#fff;border:1px solid #d8cbb0;color:#8a7a55;padding:8px 14px;border-radius:40px;text-decoration:none;font-weight:600;font-size:0.82rem;">⌂ Início</a>
     </div>
@@ -129,6 +129,7 @@
     function comissaoDe(t){ return comissionavel(t["Servico"]) ? Math.round((parseFloat(t["ValorTotal"])||0)*PCT_COMISSAO) : 0; }
 
     const params=new URLSearchParams(location.search);
+    function cameFromMenu(){ return params.get('from')==='menu' || /menu\.html/.test(document.referrer); }
     let nome=params.get('t')||'';
     if(nome){ let k=Object.keys(TERAPEUTAS).find(n=>n.toLowerCase().normalize('NFD').replace(/[^a-z]/gi,'')===nome.toLowerCase().normalize('NFD').replace(/[^a-z]/gi,'')); if(k)nome=k; }
     const cfg=TERAPEUTAS[nome];
@@ -148,7 +149,7 @@
         var card=document.querySelector('.gate-card'); var div=document.createElement('div');
         div.innerHTML=Object.keys(TERAPEUTAS).map(function(n){ return '<button class="escolher" data-n="'+n+'" style="width:100%;padding:11px;margin-bottom:8px;background:#f3f6ee;color:#51604a;border:1px solid #d8e0cf;border-radius:40px;font-weight:600;cursor:pointer;">'+n+'</button>'; }).join('');
         card.appendChild(div);
-        card.querySelectorAll('.escolher').forEach(function(b){ b.addEventListener('click',function(){ location.search='?t='+encodeURIComponent(b.getAttribute('data-n')); }); });
+        card.querySelectorAll('.escolher').forEach(function(b){ b.addEventListener('click',function(){ location.search='?t='+encodeURIComponent(b.getAttribute('data-n'))+(cameFromMenu()?'&from=menu':''); }); });
     } else {
         document.getElementById('gateNome').innerText='Área de '+nome;
         const pb=document.getElementById('pinBtn'), pi=document.getElementById('pin');
@@ -160,6 +161,7 @@
 
     function iniciar(){
         document.getElementById('app').style.display='block';
+        if(cameFromMenu()) document.getElementById('navMenu').style.display='flex';
         document.getElementById('ola').innerText='Olá, '+nome+'!';
         const av=document.getElementById('avatar'); const img=new Image();
         img.onload=()=>{ av.innerHTML=''; av.appendChild(img); }; img.onerror=()=>{ av.textContent=nome.charAt(0).toUpperCase(); };

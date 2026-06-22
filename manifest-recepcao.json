@@ -1,0 +1,16 @@
+{
+  "name": "Recepção — Casas Brancas Spa",
+  "short_name": "SPA Recepção",
+  "description": "Painel completo da recepção do Spa Casas Brancas.",
+  "start_url": "menu.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef0e8",
+  "theme_color": "#51604a",
+  "icons": [
+    { "src": "icon-spa-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-spa-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-spa-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

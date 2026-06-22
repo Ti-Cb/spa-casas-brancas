@@ -195,12 +195,22 @@
     const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 
     if(!cfg){
-        document.getElementById('gateNome').innerText='Selecione o seu nome:';
-        document.getElementById('pin').style.display='none'; document.getElementById('pinBtn').style.display='none'; document.getElementById('pinErro').style.display='none';
-        var card=document.querySelector('.gate-card'); var div=document.createElement('div');
-        div.innerHTML=Object.keys(TERAPEUTAS).map(function(n){ return '<button class="escolher" data-n="'+n+'" style="width:100%;padding:11px;margin-bottom:8px;background:#f3f6ee;color:#51604a;border:1px solid #d8e0cf;border-radius:40px;font-weight:600;cursor:pointer;">'+n+'</button>'; }).join('');
-        card.appendChild(div);
-        card.querySelectorAll('.escolher').forEach(function(b){ b.addEventListener('click',function(){ location.search='?t='+encodeURIComponent(b.getAttribute('data-n'))+(cameFromMenu()?'&from=menu':''); }); });
+        document.getElementById('gateNome').innerText='Entre com seu nome e senha';
+        var card=document.querySelector('.gate-card'); var pinEl=document.getElementById('pin');
+        var userEl=document.createElement('input'); userEl.type='text'; userEl.id='loginNome'; userEl.placeholder='Nome'; userEl.autocomplete='off';
+        userEl.style.cssText='width:100%;padding:12px 14px;border:1px solid #dde0d4;border-radius:10px;font-size:1rem;text-align:center;margin-bottom:10px;';
+        card.insertBefore(userEl, pinEl);
+        pinEl.placeholder='Senha';
+        function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[^a-z]/gi,''); }
+        function entrar(){
+            var alvo=Object.keys(TERAPEUTAS).find(function(k){ return norm(k)===norm(userEl.value); });
+            if(alvo && TERAPEUTAS[alvo].pin===pinEl.value){ nome=alvo; document.getElementById('gate').style.display='none'; iniciar(); }
+            else { var pe=document.getElementById('pinErro'); pe.innerText='Nome ou senha incorretos'; pe.style.display='block'; pinEl.value=''; }
+        }
+        document.getElementById('pinBtn').addEventListener('click',entrar);
+        userEl.addEventListener('keydown',function(e){ if(e.key==='Enter')entrar(); });
+        pinEl.addEventListener('keydown',function(e){ if(e.key==='Enter')entrar(); });
+        userEl.focus();
     } else {
         document.getElementById('gateNome').innerText='Área de '+nome;
         const pb=document.getElementById('pinBtn'), pi=document.getElementById('pin');

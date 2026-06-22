@@ -132,6 +132,7 @@
 
     const params=new URLSearchParams(location.search);
     function cameFromMenu(){ return params.get('from')==='menu' || /menu\.html/.test(document.referrer); }
+    function isStandalone(){ try{ return matchMedia('(display-mode: standalone)').matches || navigator.standalone; }catch(e){ return false; } }
     let nome=params.get('t')||'';
     if(nome){ let k=Object.keys(TERAPEUTAS).find(n=>n.toLowerCase().normalize('NFD').replace(/[^a-z]/gi,'')===nome.toLowerCase().normalize('NFD').replace(/[^a-z]/gi,'')); if(k)nome=k; }
     const cfg=TERAPEUTAS[nome];
@@ -211,7 +212,7 @@
 
     function iniciar(){
         document.getElementById('app').style.display='block';
-        if(cameFromMenu()) document.getElementById('navMenu').style.display='flex';
+        if(cameFromMenu()||isStandalone()){ var _nv=document.getElementById('navMenu'); _nv.style.display='flex'; if(!cameFromMenu()){ var _a=_nv.querySelector('a'); if(_a) _a.setAttribute('href','terapeuta.html?t='+encodeURIComponent(nome)); } }
         document.getElementById('ola').innerText='Olá, '+nome+'!';
         const av=document.getElementById('avatar'); const img=new Image();
         img.onload=()=>{ av.innerHTML=''; av.appendChild(img); }; img.onerror=()=>{ av.textContent=nome.charAt(0).toUpperCase(); };

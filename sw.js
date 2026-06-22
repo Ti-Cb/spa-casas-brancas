@@ -1,5 +1,5 @@
 // Service Worker — Casas Brancas Spa (PWA)
-const CACHE = 'spa-cb-v1';
+const CACHE = 'spa-cb-v2';
 const ASSETS = ['menu.html','painel.html','terapeuta.html','index.html',
   'spa-logo-white.png','icon-spa-192.png','icon-spa-512.png','icon-spa-maskable.png'];
 

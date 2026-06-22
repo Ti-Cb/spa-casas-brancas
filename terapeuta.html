@@ -141,12 +141,16 @@
     // ===== PWA: app instalável (link único, login por nome+senha) + service worker =====
     try{
         var _start = cfg ? ('terapeuta.html?t='+encodeURIComponent(nome)+'&from=app') : 'terapeuta.html';
-        var _m={ name:'SPA Casas Brancas Agenda', short_name:'SPA Agenda', start_url:_start, scope:'./', display:'standalone', orientation:'portrait', background_color:'#eef0e8', theme_color:'#51604a',
+        var _m={ id:'spa-casasbrancas-agenda', name:'SPA Casas Brancas Agenda', short_name:'SPA Agenda', start_url:_start, scope:'./', display:'standalone', orientation:'portrait', background_color:'#eef0e8', theme_color:'#51604a',
             icons:[{src:'icon-spa-192.png',sizes:'192x192',type:'image/png'},{src:'icon-spa-512.png',sizes:'512x512',type:'image/png'},{src:'icon-spa-maskable.png',sizes:'512x512',type:'image/png',purpose:'maskable'}] };
         var _b=new Blob([JSON.stringify(_m)],{type:'application/manifest+json'});
         var _l=document.createElement('link'); _l.rel='manifest'; _l.href=URL.createObjectURL(_b); document.head.appendChild(_l);
     }catch(e){}
-    if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+    if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('sw.js').then(function(r){ if(r.waiting)r.waiting.postMessage('skipWaiting'); setInterval(function(){ r.update(); }, 30*60*1000); }).catch(function(){});
+        var _rl=false; navigator.serviceWorker.addEventListener('controllerchange', function(){ if(_rl)return; _rl=true; location.reload(); });
+        document.addEventListener('visibilitychange', function(){ if(!document.hidden && navigator.serviceWorker.controller){ navigator.serviceWorker.getRegistration().then(function(r){ if(r)r.update(); }); } });
+    }
 
     // ===== Notificações locais (sem servidor) =====
     function pedirPermissao(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} }

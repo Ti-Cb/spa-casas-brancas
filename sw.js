@@ -1,8 +1,9 @@
 // Service Worker — Casas Brancas Spa (PWA)
-const CACHE = 'spa-cb-v2';
+const CACHE = 'spa-cb-v3';
 const ASSETS = ['menu.html','painel.html','terapeuta.html','index.html',
   'spa-logo-white.png','icon-spa-192.png','icon-spa-512.png','icon-spa-maskable.png'];
 
+self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{})));

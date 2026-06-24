@@ -350,13 +350,13 @@
         let lista=reservas.filter(t=>getStatus(t)==='completed' && noPeriodo(t,p)).sort((a,b)=>new Date(a["Data"])-new Date(b["Data"]));
         let totalMass=0;
         let rows=lista.map(t=>{ let c=comissaoDe(t); totalMass+=c; return `<tr><td>${fmtData(t["Data"])}</td><td>${t["Servico"]||'-'}</td><td>${t["Nome"]||'-'}</td><td style="text-align:right;">${c?brl(c):'—'}</td></tr>`; }).join('');
-        let pdias=plantoes.filter(k=>{ let dt=new Date(k); return !isNaN(dt) && noPeriodo({Data:k},p); });
+        let pdias=plantoes.filter(k=>{ let dt=parseLocal(k); return !isNaN(dt) && noPeriodo({Data:k},p); }).sort((a,b)=>parseLocal(a)-parseLocal(b));
         let comPlant=pdias.length*valorPlantao(nome);
-        let plantRow = pdias.length?`<tr><td>${pdias.length}× plantão</td><td>Plantão</td><td>—</td><td style="text-align:right;">${brl(comPlant)}</td></tr>`:'';
+        let plantRows=pdias.map(k=>`<tr><td>${fmtData(k)}</td><td>Plantão</td><td>—</td><td style="text-align:right;">${brl(valorPlantao(nome))}</td></tr>`).join('');
         let total=totalMass+comPlant;
         document.getElementById('comTotal').innerText=brl(total);
         document.getElementById('comQtd').innerText=lista.length+' massagem(ns) (28%) · '+pdias.length+' plantão(ões) ('+brl(valorPlantao(nome))+' cada)';
-        document.getElementById('comLista').innerHTML=`<table><thead><tr><th>Data</th><th>Serviço</th><th>Hóspede</th><th style="text-align:right;">Comissão</th></tr></thead><tbody>${rows}${plantRow}${(!rows&&!plantRow)?'<tr><td colspan=4 class="vazio">Nada no período.</td></tr>':''}</tbody></table>`;
+        document.getElementById('comLista').innerHTML=`<table><thead><tr><th>Data</th><th>Serviço</th><th>Hóspede</th><th style="text-align:right;">Comissão</th></tr></thead><tbody>${rows}${plantRows}${(!rows&&!plantRows)?'<tr><td colspan=4 class="vazio">Nada no período.</td></tr>':''}</tbody></table>`;
     }
     document.querySelectorAll('.pbtn').forEach(b=>b.addEventListener('click',()=>renderCom(b.getAttribute('data-p'))));
 

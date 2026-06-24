@@ -192,7 +192,10 @@
     const SPA_WHATSAPP = "5522997909544";
     const SPA_EMAIL = "front@casasbrancas.com.br";
     const FICHA_URL = "index.html"; // ficha do hóspede publicada como index.html
-    let reservas = [], periodo='todos', editando=null, autoTimer=null;
+    let reservas = [], plantoes = [], periodo='todos', editando=null, autoTimer=null;
+    // Plantão: valor por dia (líder recebe mais). Igual ao app do massoterapeuta.
+    const PLANTAO_PADRAO=150, PLANTAO_POR={"Tasso":250};
+    function valorPlantao(n){ return PLANTAO_POR[n]||PLANTAO_PADRAO; }
 
     function brl(v){ return "R$ "+(Math.round(parseFloat(v)||0)).toLocaleString('pt-BR'); }
     function getStatus(t){ return (t["Status"]||'active').toString().toLowerCase()||'active'; }
@@ -212,6 +215,7 @@
         try{
             const r=await fetch(WEBAPP_URL); const d=await r.json();
             reservas=Array.isArray(d)?d:[];
+            try{ const rp=await fetch(WEBAPP_URL+'?action=plantoes'); const dp=await rp.json(); plantoes=Array.isArray(dp)?dp:[]; }catch(e){ plantoes=[]; }
             document.getElementById('lastUpdate').innerText='Atualizado: '+new Date().toLocaleString('pt-BR')+' ('+reservas.length+')';
             renderConflitos(); renderAvisos(); renderProximos(); renderLista(); renderFinanceiro(periodo);
         }catch(e){ let el=document.getElementById('errorDisplay'); el.style.display='block'; el.innerText='Erro ao carregar: '+e.message; }
@@ -374,11 +378,16 @@
     function comissaoDe(t){ return comissionavel(t["Servico"])?Math.round((parseFloat(t["ValorTotal"])||0)*PCT_COMISSAO):0; }
     // Competência 21 -> 20 (igual à planilha do SPA)
     function janelaComp(off){ let h=new Date(); h.setHours(0,0,0,0); let ini=(h.getDate()>=21)?new Date(h.getFullYear(),h.getMonth(),21):new Date(h.getFullYear(),h.getMonth()-1,21); ini.setMonth(ini.getMonth()+off); let fim=new Date(ini.getFullYear(),ini.getMonth()+1,20,23,59,59); return {ini:ini,fim:fim}; }
+    function janelaDe(p){ if(p==='todos')return null; return p==='mesAtual'?janelaComp(0):(p==='mesAnterior'?janelaComp(-1):{ini:janelaComp(-2).ini,fim:janelaComp(0).fim}); }
     function doPeriodo(p){
         let at=reservas.filter(t=>!isCanc(t));
-        if(p==='todos')return at;
-        let w = p==='mesAtual'?janelaComp(0):(p==='mesAnterior'?janelaComp(-1):{ini:janelaComp(-2).ini,fim:janelaComp(0).fim});
+        let w=janelaDe(p);
+        if(!w)return at;
         return at.filter(t=>{ let d=new Date(t["Data"]); if(isNaN(d))return false; d.setHours(12,0,0,0); return d>=w.ini&&d<=w.fim; });
+    }
+    function plantoesPeriodo(p){
+        let w=janelaDe(p);
+        return plantoes.filter(x=>{ if(!w)return true; let d=new Date(x.Data); if(isNaN(d))return false; d.setHours(12,0,0,0); return d>=w.ini&&d<=w.fim; });
     }
     function renderFinanceiro(p){
         periodo=p;
@@ -386,8 +395,9 @@
         let total=lista.reduce((s,t)=>s+(parseFloat(t["ValorTotal"])||0),0);
         let qtd=lista.length, ticket=qtd?total/qtd:0, recep=total*0.06;
         document.getElementById('finTotal').innerText=brl(total);
-        let porT={}; lista.forEach(t=>{ let k=(t["Terapeuta"]||'(sem terapeuta)'); if(!porT[k])porT[k]={q:0,v:0,c:0}; porT[k].q++; porT[k].v+=parseFloat(t["ValorTotal"])||0; porT[k].c+=comissaoDe(t); });
-        let prof=Object.entries(porT).sort((a,b)=>b[1].v-a[1].v).map(([k,d])=>`<tr><td>${k}</td><td>${d.q}</td><td>${brl(d.v)}</td><td>${brl(d.c)}</td></tr>`).join('');
+        let porT={}; lista.forEach(t=>{ let k=(t["Terapeuta"]||'(sem terapeuta)'); if(!porT[k])porT[k]={q:0,v:0,c:0,p:0}; porT[k].q++; porT[k].v+=parseFloat(t["ValorTotal"])||0; porT[k].c+=comissaoDe(t); });
+        plantoesPeriodo(p).forEach(x=>{ let k=(x.Terapeuta||'(sem terapeuta)'); if(!porT[k])porT[k]={q:0,v:0,c:0,p:0}; porT[k].p++; porT[k].c+=valorPlantao(k); });
+        let prof=Object.entries(porT).sort((a,b)=>b[1].c-a[1].c).map(([k,d])=>`<tr><td>${k}</td><td>${d.q}</td><td>${d.p||0}</td><td>${brl(d.v)}</td><td>${brl(d.c)}</td></tr>`).join('');
         let porS={}; lista.forEach(t=>{ let k=(t["Servico"]||'-'); if(!porS[k])porS[k]={q:0,v:0}; porS[k].q++; porS[k].v+=parseFloat(t["ValorTotal"])||0; });
         let trat=Object.entries(porS).sort((a,b)=>b[1].v-a[1].v).map(([k,d])=>`<tr><td>${k}</td><td>${d.q}</td><td>${brl(d.v)}</td><td>${total?Math.round(d.v/total*100):0}%</td></tr>`).join('');
         document.getElementById('finDetalhe').innerHTML=
@@ -397,7 +407,7 @@
                 <div style="flex:1;min-width:150px;background:#f3f6ee;border-radius:12px;padding:14px;"><div style="font-size:0.75rem;color:#8a937e;">Comissão recepção (6%)</div><div style="font-size:1.4rem;font-weight:700;color:var(--sage-d);">${brl(recep)}</div></div>
             </div>
             <h3 style="margin:6px 0 8px;">Por profissional</h3>
-            <table><thead><tr><th>Terapeuta</th><th>Atend.</th><th>Receita</th><th>Comissão (28%)</th></tr></thead><tbody>${prof||'<tr><td colspan=4>Sem dados.</td></tr>'}</tbody></table>
+            <table><thead><tr><th>Terapeuta</th><th>Atend.</th><th>Plantões</th><th>Receita</th><th>Comissão (28% + plantão)</th></tr></thead><tbody>${prof||'<tr><td colspan=5>Sem dados.</td></tr>'}</tbody></table>
             <h3 style="margin:16px 0 8px;">Por tratamento</h3>
             <table><thead><tr><th>Tratamento</th><th>Qtd</th><th>Valor</th><th>%</th></tr></thead><tbody>${trat||'<tr><td colspan=4>Sem dados.</td></tr>'}</tbody></table>`;
         document.querySelectorAll('.periodo-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-p')===p));

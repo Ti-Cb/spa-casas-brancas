@@ -197,13 +197,15 @@
     const PLANTAO_PADRAO=150, PLANTAO_POR={"Tasso":250};
     function valorPlantao(n){ return PLANTAO_POR[n]||PLANTAO_PADRAO; }
 
+    // Lê "YYYY-MM-DD" no fuso LOCAL (evita o -1 dia do new Date em UTC).
+    function parseLocal(v){ if(!v) return new Date(NaN); let m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?new Date(+m[1],+m[2]-1,+m[3]):new Date(v); }
     function brl(v){ return "R$ "+(Math.round(parseFloat(v)||0)).toLocaleString('pt-BR'); }
     function getStatus(t){ return (t["Status"]||'active').toString().toLowerCase()||'active'; }
     function isCanc(t){ return getStatus(t)==='cancelled'; }
     function isDone(t){ return getStatus(t)==='completed'; }
-    function dataKey(t){ if(!t["Data"])return null; let d=new Date(t["Data"]); return isNaN(d)?null:(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); }
+    function dataKey(t){ if(!t["Data"])return null; let d=parseLocal(t["Data"]); return isNaN(d)?null:(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); }
     function keyOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-    function fData(v){ if(!v)return"-"; let d=new Date(v); return isNaN(d)?"-":(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()); }
+    function fData(v){ if(!v)return"-"; let d=parseLocal(v); return isNaN(d)?"-":(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()); }
     function hora(t){ let h=(t["Horario"]||'').toString(); let m=h.match(/(\d{1,2}):(\d{2})/); return m?(m[1].padStart(2,'0')+':'+m[2]):(h||'-'); }
     function waPhone(tel){ let d=(tel||'').toString().replace(/\D/g,''); if(!d)return''; if(d.startsWith('55')&&d.length>=12)return d; if(d.length===10||d.length===11)return '55'+d; return d; }
     function idOf(t){ return (t["Id"]||t["ID"]||t["id"]||'').toString(); }
@@ -284,9 +286,9 @@
             return true;
         });
         if(!lista.length){ tb.innerHTML='<tr><td colspan="10" style="text-align:center;">Nenhum com esses filtros.</td></tr>'; return; }
-        lista.sort((a,b)=>{ let d=new Date(a["Data"])-new Date(b["Data"]); return d!==0?d:hora(a).localeCompare(hora(b)); });
+        lista.sort((a,b)=>{ let d=parseLocal(a["Data"])-parseLocal(b["Data"]); return d!==0?d:hora(a).localeCompare(hora(b)); });
         let grupos={};
-        lista.forEach(t=>{ let d=new Date(t["Data"]); let g=isNaN(d)?'Sem data':d.toLocaleString('pt-BR',{month:'long',year:'numeric'}); (grupos[g]=grupos[g]||[]).push(t); });
+        lista.forEach(t=>{ let d=parseLocal(t["Data"]); let g=isNaN(d)?'Sem data':d.toLocaleString('pt-BR',{month:'long',year:'numeric'}); (grupos[g]=grupos[g]||[]).push(t); });
         let html='';
         for(let [g,itens] of Object.entries(grupos)){
             html+=`<tr class="month-group"><td colspan="10"><strong>${g}</strong> (${itens.length})</td></tr>`;
@@ -383,11 +385,11 @@
         let at=reservas.filter(t=>!isCanc(t));
         let w=janelaDe(p);
         if(!w)return at;
-        return at.filter(t=>{ let d=new Date(t["Data"]); if(isNaN(d))return false; d.setHours(12,0,0,0); return d>=w.ini&&d<=w.fim; });
+        return at.filter(t=>{ let d=parseLocal(t["Data"]); if(isNaN(d))return false; d.setHours(12,0,0,0); return d>=w.ini&&d<=w.fim; });
     }
     function plantoesPeriodo(p){
         let w=janelaDe(p);
-        return plantoes.filter(x=>{ if(!w)return true; let d=new Date(x.Data); if(isNaN(d))return false; d.setHours(12,0,0,0); return d>=w.ini&&d<=w.fim; });
+        return plantoes.filter(x=>{ if(!w)return true; let d=parseLocal(x.Data); if(isNaN(d))return false; d.setHours(12,0,0,0); return d>=w.ini&&d<=w.fim; });
     }
     function renderFinanceiro(p){
         periodo=p;
@@ -414,7 +416,7 @@
     }
     function exportarPDF(){
         let lbl={todos:'Todos',mesAtual:'Este mês',mesAnterior:'Mês passado',trimestre:'Últimos 3 meses'};
-        let lista=[...doPeriodo(periodo)].sort((a,b)=>new Date(a["Data"])-new Date(b["Data"]));
+        let lista=[...doPeriodo(periodo)].sort((a,b)=>parseLocal(a["Data"])-parseLocal(b["Data"]));
         let total=lista.reduce((s,t)=>s+(parseFloat(t["ValorTotal"])||0),0);
         let rows=lista.map(t=>`<tr><td>${fData(t["Data"])}</td><td>${hora(t)}</td><td>${t["Nome"]||'-'}</td><td>${t["Servico"]||'-'}</td><td>${t["Terapeuta"]||'-'}</td><td style="text-align:right;">${brl(t["ValorTotal"])}</td></tr>`).join('');
         let html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Financeiro SPA</title><style>body{font-family:Arial;color:#34362f;padding:30px;}h1{color:#51604a;font-size:1.3rem;}.s{color:#8a937e;font-size:0.85rem;margin-bottom:16px;}table{width:100%;border-collapse:collapse;font-size:0.82rem;}th,td{border-bottom:1px solid #ddd;padding:7px;text-align:left;}th{background:#eef2e6;color:#51604a;}tfoot td{font-weight:bold;border-top:2px solid #51604a;}@media print{.np{display:none;}}</style></head><body>'+

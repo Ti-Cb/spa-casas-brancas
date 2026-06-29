@@ -128,7 +128,7 @@
     const PLANTAO_PADRAO = 150;
     const PLANTAO_POR = { "Tasso": 250 };   // líder recebe mais; demais usam o padrão
     function valorPlantao(n){ return PLANTAO_POR[n] || PLANTAO_PADRAO; }
-    function comissionavel(servico){ let s=(servico||'').toString().toLowerCase().trim(); if(s==='yoga') return false; return !['reiki','pilates','gds','osteo'].some(x=>s.indexOf(x)>-1); }
+    function comissionavel(servico){ let s=(servico||'').toString().toLowerCase().trim(); return !['yoga','reiki','pilates','gds','osteo'].some(x=>s.indexOf(x)>-1); }
     function comissaoDe(t){ return comissionavel(t["Servico"]) ? Math.round((parseFloat(t["ValorTotal"])||0)*PCT_COMISSAO) : 0; }
 
     const params=new URLSearchParams(location.search);
@@ -241,6 +241,8 @@
 
     async function carregarTudo(){
         if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){
+            // zera antes de recarregar (senão a disponibilidade/plantões acumulam a cada atualização)
+            disponibilidade={}; plantoes=[];
             try{ const r=await fetch(WEBAPP_URL+'?action=disponibilidade&t='+encodeURIComponent(nome)); const d=await r.json();
                 if(Array.isArray(d)) d.forEach(x=>{ let k=(x.Data||'').toString().slice(0,10); if(!k)return; disponibilidade[k]=(x.Horarios||'').toString().split(',').map(s=>s.trim()).filter(Boolean); if((x.Plantao||'').toString().toLowerCase()==='sim'||x.Plantao===true) plantoes.push(k); }); }catch(e){}
             try{ const r2=await fetch(WEBAPP_URL); const d2=await r2.json(); reservas=(Array.isArray(d2)?d2:[]).filter(t=>(t["Terapeuta"]||'')===nome); }catch(e){}
@@ -347,7 +349,7 @@
     }
     function renderCom(p){
         document.querySelectorAll('.pbtn').forEach(b=>b.classList.toggle('on',b.getAttribute('data-p')===p));
-        let lista=reservas.filter(t=>getStatus(t)==='completed' && noPeriodo(t,p)).sort((a,b)=>new Date(a["Data"])-new Date(b["Data"]));
+        let lista=reservas.filter(t=>getStatus(t)==='completed' && noPeriodo(t,p)).sort((a,b)=>parseLocal(a["Data"])-parseLocal(b["Data"]));
         let totalMass=0;
         let rows=lista.map(t=>{ let c=comissaoDe(t); totalMass+=c; return `<tr><td>${fmtData(t["Data"])}</td><td>${t["Servico"]||'-'}</td><td>${t["Nome"]||'-'}</td><td style="text-align:right;">${c?brl(c):'—'}</td></tr>`; }).join('');
         let pdias=plantoes.filter(k=>{ let dt=parseLocal(k); return !isNaN(dt) && noPeriodo({Data:k},p); }).sort((a,b)=>parseLocal(a)-parseLocal(b));

@@ -376,7 +376,7 @@
 
     // ===== FINANCEIRO =====
     const PCT_COMISSAO=0.28;
-    function comissionavel(s){ s=(s||'').toString().toLowerCase().trim(); if(s==='yoga')return false; return !['reiki','pilates','gds','osteo'].some(x=>s.indexOf(x)>-1); }
+    function comissionavel(s){ s=(s||'').toString().toLowerCase().trim(); return !['yoga','reiki','pilates','gds','osteo'].some(x=>s.indexOf(x)>-1); }
     function comissaoDe(t){ return comissionavel(t["Servico"])?Math.round((parseFloat(t["ValorTotal"])||0)*PCT_COMISSAO):0; }
     // Competência 21 -> 20 (igual à planilha do SPA)
     function janelaComp(off){ let h=new Date(); h.setHours(0,0,0,0); let ini=(h.getDate()>=21)?new Date(h.getFullYear(),h.getMonth(),21):new Date(h.getFullYear(),h.getMonth()-1,21); ini.setMonth(ini.getMonth()+off); let fim=new Date(ini.getFullYear(),ini.getMonth()+1,20,23,59,59); return {ini:ini,fim:fim}; }
@@ -481,3 +481,4 @@
 </script>
 </body>
 </html>
+                     

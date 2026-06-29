@@ -71,7 +71,7 @@
     </div>
 </div>
 <script>
-(function(){ var USER="casasbrancas", SENHA="Cb1974", JANELA=30*60*1000; var g=document.getElementById('authGate');
+(function(){ var USER="casasbrancas", SENHA="Casas1974", JANELA=30*60*1000; var g=document.getElementById('authGate');
     function marcar(){ try{ localStorage.setItem('spa_menu_ts',String(Date.now())); }catch(e){} }
     function liberar(){ if(g)g.style.display='none'; }
     try{ var ts=parseInt(localStorage.getItem('spa_menu_ts')||'0',10); if(ts&&(Date.now()-ts)<JANELA){ marcar(); liberar(); return; } }catch(e){}
@@ -231,4 +231,4 @@
     }
 </script>
 </body>
-</html>
+</htm

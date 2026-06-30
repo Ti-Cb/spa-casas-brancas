@@ -513,4 +513,49 @@
     document.getElementById('eCancelar').addEventListener('click',()=>document.getElementById('editOv').classList.remove('show'));
     document.getElementById('eSalvar').addEventListener('click',salvarEdit);
     document.getElementById('eServico').addEventListener('input',function(){ var d=durDeServico(this.value); if(d) document.getElementById('eDuracao').value=d; });
-    document.getElement
+    document.getElementById('anamFechar').addEventListener('click',()=>document.getElementById('anamOv').classList.remove('show'));
+    document.getElementById('autoRefresh').addEventListener('change',()=>{ if(autoTimer){clearInterval(autoTimer);autoTimer=null;} if(document.getElementById('autoRefresh').checked)autoTimer=setInterval(carregar,5*60*1000); });
+
+    // ===== NOVO AGENDAMENTO (recepção gera a ficha pré-preenchida) =====
+    document.getElementById('novoBtn').addEventListener('click',()=>{
+        document.getElementById('linkBox').style.display='none';
+        ['novoNome','novoQuarto','novoSala'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('novoTer').value='';
+        document.getElementById('novoData').value=new Date().toISOString().slice(0,10);
+        document.getElementById('novoHora').value='14:30';
+        document.getElementById('novoOv').classList.add('show');
+    });
+    document.getElementById('novoFechar').addEventListener('click',()=>document.getElementById('novoOv').classList.remove('show'));
+    document.getElementById('novoGerar').addEventListener('click',()=>{
+        let data=document.getElementById('novoData').value, hora=document.getElementById('novoHora').value.trim();
+        let nome=document.getElementById('novoNome').value.trim(), quarto=document.getElementById('novoQuarto').value.trim();
+        let ter=document.getElementById('novoTer').value, sala=document.getElementById('novoSala').value.trim();
+        if(!data||!hora||!nome){ alert('Preencha data, horário e nome.'); return; }
+        let id=Date.now();
+        if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){
+            try{ fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,nome:nome,quarto:quarto,data:data,horario:hora,terapeuta:ter,sala:sala,status:'aguardando_ficha'})}); }catch(e){}
+        }
+        let rel=FICHA_URL+'?id='+id+'&nome='+encodeURIComponent(nome)+'&quarto='+encodeURIComponent(quarto)+'&data='+data+'&hora='+encodeURIComponent(hora);
+        let link=new URL(rel, location.href).href;
+        document.getElementById('linkInput').value=link;
+        document.getElementById('linkBox').style.display='block';
+        let qb=document.getElementById('qrBox'); qb.innerHTML='';
+        try{ new QRCode(qb,{text:link,width:170,height:170,correctLevel:QRCode.CorrectLevel.M}); }
+        catch(e){ qb.innerHTML='<img alt="QR" src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data='+encodeURIComponent(link)+'">'; }
+        setTimeout(carregar,1500);
+    });
+    document.getElementById('copiarLink').addEventListener('click',()=>{ let i=document.getElementById('linkInput'); i.select(); try{navigator.clipboard.writeText(i.value);}catch(e){} });
+    document.getElementById('abrirLink').addEventListener('click',()=>{ window.open(document.getElementById('linkInput').value,'_blank'); });
+
+    autoTimer=setInterval(carregar,5*60*1000);
+    setInterval(renderAvisos,60*1000);
+    carregar();
+
+    if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('sw.js').then(function(r){ if(r.waiting)r.waiting.postMessage('skipWaiting'); setInterval(function(){ r.update(); }, 30*60*1000); }).catch(function(){});
+        var _rl=false; navigator.serviceWorker.addEventListener('controllerchange', function(){ if(_rl)return; _rl=true; location.reload(); });
+        document.addEventListener('visibilitychange', function(){ if(!document.hidden && navigator.serviceWorker.controller){ navigator.serviceWorker.getRegistration().then(function(r){ if(r)r.update(); }); } });
+    }
+</script>
+</body>
+</html>

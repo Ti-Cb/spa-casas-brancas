@@ -126,6 +126,7 @@
         <div class="periodo-card">
             <div style="font-size:0.9rem; opacity:0.9;">Receita do período</div>
             <div class="v" id="finTotal">R$ -</div>
+            <div id="finPeriodo" style="font-size:0.82rem; opacity:0.92; margin-top:4px;"></div>
             <div class="periodo-btns">
                 <button class="periodo-btn active" data-p="todos">Todos</button>
                 <button class="periodo-btn" data-p="mesAtual">Este mês</button>
@@ -143,13 +144,24 @@
 </div>
 
 <div class="ov" id="editOv"><div class="ov-card">
-    <h3>Ajustar atendimento</h3>
+    <h3>Editar atendimento</h3>
     <div id="editResumo" style="font-size:0.82rem;color:#8a937e;margin-bottom:6px;"></div>
+    <label>Nome do hóspede</label><input type="text" id="eNome" placeholder="Nome completo">
+    <label>Quarto / reserva</label><input type="text" id="eQuarto" placeholder="Ex.: 204">
+    <label>Contato</label>
+    <div style="display:flex;gap:8px;">
+        <select id="eMetodo" style="width:130px;flex:0 0 auto;"><option value="WhatsApp">WhatsApp</option><option value="Email">E-mail</option></select>
+        <input type="text" id="eContato" placeholder="Telefone ou e-mail" style="flex:1;">
+    </div>
+    <label>Serviço / tratamento</label><input type="text" id="eServico" placeholder="Ex.: Casas Brancas Blend">
+    <label>Duração (min)</label><input type="number" id="eDuracao" min="0" step="10" placeholder="50">
     <label>Data</label><input type="date" id="eData">
     <label>Horário</label><input type="text" id="eHora" list="slots" placeholder="14:30"><datalist id="slots"><option>14:30</option><option>16:00</option><option>17:30</option><option>19:00</option></datalist>
     <label>Terapeuta</label><select id="eTer"><option value="">(a definir)</option><option>Tasso</option><option>Jéssica</option><option>Dani</option><option>Vanina</option><option>Bahia</option></select>
     <label>Sala / Cabine</label><input type="text" id="eSala" placeholder="Ex.: Cabine 1">
     <label>Valor (R$)</label><input type="number" id="eValor" min="0" step="10">
+    <label>Observações</label><textarea id="eObs" rows="2"></textarea>
+    <div style="font-size:0.74rem;color:#8a937e;margin-top:10px;">Para alterar a <b>ficha de anamnese</b>, use o botão "Ficha ✎" na lista (reabre o formulário do hóspede).</div>
     <div class="ov-acoes">
         <button style="background:transparent;color:#6b7560;border:1px solid #cfd4c4 !important;" id="eCancelar">Fechar</button>
         <button style="background:linear-gradient(135deg,var(--sage),var(--sage-d));color:#fff;" id="eSalvar">Salvar</button>
@@ -303,6 +315,7 @@
                     <td>${t["Sala"]||'-'}</td><td>${brl(t["ValorTotal"])}</td>
                     <td style="white-space:nowrap;">
                         <button class="btn btn-ficha" data-act="ficha" data-id="${_id}">Ficha</button>
+                        <button class="btn btn-ficha" data-act="fichaEdit" data-id="${_id}" ${isCanc(t)?'disabled':''}>Ficha ✎</button>
                         <button class="btn btn-edit" data-act="edit" data-id="${_id}" ${isCanc(t)?'disabled':''}>Editar</button>
                         <button class="btn btn-wa" data-act="confirmar" data-id="${_id}" ${dis?'disabled':''}>Confirmar</button>
                         <button class="btn btn-fim" data-act="completed" data-id="${_id}" ${dis?'disabled':''}>Finalizar</button>
@@ -315,6 +328,7 @@
             let t=porId(b.dataset.id); if(!t)return;
             let a=b.dataset.act;
             if(a==='ficha')verFicha(t);
+            else if(a==='fichaEdit') window.open(FICHA_URL+'?id='+encodeURIComponent(idOf(t)),'_blank');
             else if(a==='edit')abrirEdit(t);
             else if(a==='confirmar')confirmar(t);
             else if(a==='completed')marcar(t,'completed');
@@ -358,17 +372,42 @@
     function abrirEdit(t){
         editando=t;
         document.getElementById('editResumo').innerText=(editando["Nome"]||'-')+' · '+(editando["Servico"]||'-');
+        document.getElementById('eNome').value=editando["Nome"]||'';
+        document.getElementById('eQuarto').value=editando["Quarto"]||'';
+        var metodo=(editando["Contato"]||'WhatsApp').toString(); if(metodo!=='Email'&&metodo!=='WhatsApp')metodo='WhatsApp';
+        document.getElementById('eMetodo').value=metodo;
+        document.getElementById('eContato').value=(metodo==='Email'?(editando["Email"]||''):(editando["Telefone"]||''));
+        document.getElementById('eServico').value=editando["Servico"]||'';
+        var dd=parseInt(editando["Duracao"]); document.getElementById('eDuracao').value=isNaN(dd)?'':dd;
         document.getElementById('eData').value=(editando["Data"]||'').toString().slice(0,10);
         document.getElementById('eHora').value=hora(editando)==='-'?'':hora(editando);
         document.getElementById('eTer').value=editando["Terapeuta"]||'';
         document.getElementById('eSala').value=editando["Sala"]||'';
         let v=parseFloat(editando["ValorTotal"]); document.getElementById('eValor').value=isNaN(v)?'':v;
+        document.getElementById('eObs').value=editando["Obs"]||'';
         document.getElementById('editOv').classList.add('show');
     }
     function salvarEdit(){
         if(!editando)return;
-        let campos={ data:document.getElementById('eData').value, horario:document.getElementById('eHora').value, terapeuta:document.getElementById('eTer').value, sala:document.getElementById('eSala').value, valorTotal:parseFloat(document.getElementById('eValor').value)||0, status:(getStatus(editando)==='active'?'confirmed':getStatus(editando)) };
-        Object.assign(editando,{Data:campos.data,Horario:campos.horario,Terapeuta:campos.terapeuta,Sala:campos.sala,ValorTotal:campos.valorTotal,Status:campos.status});
+        var metodo=document.getElementById('eMetodo').value;
+        var contato=document.getElementById('eContato').value.trim();
+        let campos={
+            nome:document.getElementById('eNome').value.trim(),
+            quarto:document.getElementById('eQuarto').value.trim(),
+            contato:metodo,
+            telefone: metodo==='WhatsApp'?contato:'',
+            email: metodo==='Email'?contato:'',
+            servico:document.getElementById('eServico').value.trim(),
+            duracao:parseInt(document.getElementById('eDuracao').value)||'',
+            data:document.getElementById('eData').value,
+            horario:document.getElementById('eHora').value,
+            terapeuta:document.getElementById('eTer').value,
+            sala:document.getElementById('eSala').value,
+            valorTotal:parseFloat(document.getElementById('eValor').value)||0,
+            obs:document.getElementById('eObs').value,
+            status:(getStatus(editando)==='active'?'confirmed':getStatus(editando))
+        };
+        Object.assign(editando,{Nome:campos.nome,Quarto:campos.quarto,Contato:campos.contato,Telefone:campos.telefone,Email:campos.email,Servico:campos.servico,Duracao:campos.duracao,Data:campos.data,Horario:campos.horario,Terapeuta:campos.terapeuta,Sala:campos.sala,ValorTotal:campos.valorTotal,Obs:campos.obs,Status:campos.status});
         post(idOf(editando),campos);
         document.getElementById('editOv').classList.remove('show');
         renderLista(); renderProximos(); renderConflitos(); renderFinanceiro(periodo);
@@ -381,6 +420,15 @@
     // Competência 21 -> 20 (igual à planilha do SPA)
     function janelaComp(off){ let h=new Date(); h.setHours(0,0,0,0); let ini=(h.getDate()>=21)?new Date(h.getFullYear(),h.getMonth(),21):new Date(h.getFullYear(),h.getMonth()-1,21); ini.setMonth(ini.getMonth()+off); let fim=new Date(ini.getFullYear(),ini.getMonth()+1,20,23,59,59); return {ini:ini,fim:fim}; }
     function janelaDe(p){ if(p==='todos')return null; return p==='mesAtual'?janelaComp(0):(p==='mesAnterior'?janelaComp(-1):{ini:janelaComp(-2).ini,fim:janelaComp(0).fim}); }
+    // Competência = janela 21→20, nomeada pelo mês de fechamento (dia 20)
+    const _MESNOME=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    function compLabel(w){ return _MESNOME[w.fim.getMonth()]+'/'+w.fim.getFullYear(); }
+    function compRange(w){ const f=d=>String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); return f(w.ini)+' a '+f(w.fim); }
+    function periodoTexto(p){
+        if(p==='todos') return 'Todo o período';
+        if(p==='trimestre'){ var a=janelaComp(-2), b=janelaComp(0); return 'Últimas 3 competências · '+compRange({ini:a.ini,fim:b.fim}); }
+        var w=janelaComp(p==='mesAtual'?0:-1); return 'Competência '+compLabel(w)+' · '+compRange(w)+' (21→20)';
+    }
     function doPeriodo(p){
         let at=reservas.filter(t=>!isCanc(t));
         let w=janelaDe(p);
@@ -397,6 +445,7 @@
         let total=lista.reduce((s,t)=>s+(parseFloat(t["ValorTotal"])||0),0);
         let qtd=lista.length, ticket=qtd?total/qtd:0, recep=total*0.06;
         document.getElementById('finTotal').innerText=brl(total);
+        var _fp=document.getElementById('finPeriodo'); if(_fp) _fp.innerText=periodoTexto(p);
         let porT={}; lista.forEach(t=>{ let k=(t["Terapeuta"]||'(sem terapeuta)'); if(!porT[k])porT[k]={q:0,v:0,c:0,p:0}; porT[k].q++; porT[k].v+=parseFloat(t["ValorTotal"])||0; porT[k].c+=comissaoDe(t); });
         plantoesPeriodo(p).forEach(x=>{ let k=(x.Terapeuta||'(sem terapeuta)'); if(!porT[k])porT[k]={q:0,v:0,c:0,p:0}; porT[k].p++; porT[k].c+=valorPlantao(k); });
         let prof=Object.entries(porT).sort((a,b)=>b[1].c-a[1].c).map(([k,d])=>`<tr><td>${k}</td><td>${d.q}</td><td>${d.p||0}</td><td>${brl(d.v)}</td><td>${brl(d.c)}</td></tr>`).join('');
@@ -429,6 +478,7 @@
     // ===== EVENTOS =====
     document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active')); document.getElementById('tab-'+b.getAttribute('data-tab')).classList.add('active'); document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
     document.querySelectorAll('.periodo-btn').forEach(b=>b.addEventListener('click',()=>renderFinanceiro(b.getAttribute('data-p'))));
+    (function(){ try{ var a=document.querySelector('.periodo-btn[data-p="mesAtual"]'); if(a)a.textContent=compLabel(janelaComp(0)); var b=document.querySelector('.periodo-btn[data-p="mesAnterior"]'); if(b)b.textContent=compLabel(janelaComp(-1)); }catch(e){} })();
     document.getElementById('refreshBtn').addEventListener('click',carregar);
     document.getElementById('pdfBtn').addEventListener('click',exportarPDF);
     ['fBusca','fData','fStatus','fTerapeuta'].forEach(id=>{ let e=document.getElementById(id); e.addEventListener('input',renderLista); e.addEventListener('change',renderLista); });
@@ -481,4 +531,3 @@
 </script>
 </body>
 </html>
-                     

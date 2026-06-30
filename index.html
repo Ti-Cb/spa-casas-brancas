@@ -111,7 +111,9 @@
     // Dados pré-definidos pela recepção (via link): id, nome, quarto, data, hora
     const params = new URLSearchParams(location.search);
     const PRE = { id:params.get('id')||'', nome:params.get('nome')||'', quarto:params.get('quarto')||'', data:params.get('data')||'', hora:params.get('hora')||'' };
-    const temPre = !!(PRE.nome || PRE.data || PRE.hora || PRE.quarto);
+    // temPre: true quando a recepção gera/reabre a ficha (id ou dados na URL)
+    const temPre = !!(PRE.id || PRE.nome || PRE.data || PRE.hora || PRE.quarto);
+    let REG = null; // registro carregado (reabertura de ficha)
     function fmtData(v){ if(!v) return ''; let m=v.toString().match(/(\d{4})-(\d{2})-(\d{2})/); return m?(m[3]+'/'+m[2]+'/'+m[1]):v; }
     function getNome(){ return PRE.nome || (document.getElementById('nome')?.value||'').trim(); }
     function getQuarto(){ if(ehVisitante()) return ''; return PRE.quarto || (document.getElementById('quarto')?.value||''); }
@@ -208,6 +210,11 @@
             <label><input type="radio" name="${id}" value="Não" checked> Não</label>
             <label><input type="radio" name="${id}" value="Sim"> Sim</label></div></div>`;
     }
+    // Sim/Não com campo "Qual?" que aparece quando a resposta é "Sim"
+    function simNaoQual(id, label, qualLabel){
+        return simNao(id, label) +
+            `<div class="form-row" id="${id}QualRow" style="display:none;"><label>${qualLabel}</label><input type="text" id="${id}Qual" placeholder="Descreva"></div>`;
+    }
     function checks(nome, itens){
         return `<div class="cond-grid">` + itens.map(c=>`<label><input type="checkbox" name="${nome}" value="${c}"> ${c}</label>`).join('') + `</div>`;
     }
@@ -219,8 +226,8 @@
         if(tipo === 'massagem'){
             html += `<div class="form-row"><label>Região para focar a atenção</label>${checks('foco',["Cervical","Lombar","Costas","Pernas","Pés","Cabeça","Mãos"])}</div>`;
             html += `<div class="form-row"><label>Alguma parte do corpo a ser evitada? Qual?</label><input type="text" id="evitar" placeholder="Opcional"></div>`;
-            html += simNao('homeopatico','Faz uso de tratamento homeopático?');
-            html += simNao('protese','Possui prótese, pino, implante ou metal no corpo?');
+            html += simNaoQual('homeopatico','Faz uso de tratamento homeopático?','Qual tratamento homeopático?');
+            html += simNaoQual('protese','Possui prótese, pino, implante ou metal no corpo?','Qual? (tipo e local)');
             html += simNao('psiquiatrico','Faz acompanhamento/tratamento psiquiátrico?');
             html += simNao('medicacao','Uso contínuo de alguma medicação importante de informar?');
             html += `<div class="form-row"><label>Apresenta alguma destas condições?</label>${checks('condicoes',condicoesMassagem())}</div>`;
@@ -232,13 +239,23 @@
             html += simNao('acido','Já usou ácido na pele?');
             html += simNao('anticoncepcional','Faz uso de algum método anticoncepcional?');
             html += simNao('sol','Costuma tomar sol?');
-            html += simNao('homeopatico','Faz uso de tratamento homeopático?');
+            html += simNaoQual('homeopatico','Faz uso de tratamento homeopático?','Qual tratamento homeopático?');
             html += simNao('psiquiatrico','Faz acompanhamento/tratamento psiquiátrico?');
             html += simNao('medicacao','Uso contínuo de alguma medicação importante de informar?');
             html += `<div class="form-row"><label>Apresenta alguma destas condições?</label>${checks('condicoes',condicoesFacial())}</div>`;
             html += `<div class="form-row"><label>Após o tratamento, gostaria de beber</label><select id="bebida"><option value="">—</option><option>Chá quente</option><option>Chá quente com mel</option><option>Bebida refrescante Casas Brancas</option></select></div>`;
         }
         cont.innerHTML = html;
+        // mostra o campo "Qual?" quando a resposta for "Sim"
+        ['homeopatico','protese'].forEach(function(id){
+            var row=document.getElementById(id+'QualRow'); if(!row) return;
+            document.querySelectorAll('#anamneseBox input[name="'+id+'"]').forEach(function(r){
+                r.addEventListener('change',function(){
+                    var sel=document.querySelector('#anamneseBox input[name="'+id+'"]:checked');
+                    row.style.display=(sel&&sel.value==='Sim')?'':'none';
+                });
+            });
+        });
     }
 
     function iconFor(cat){
@@ -380,6 +397,61 @@
         return dados;
     }
 
+    // ===== Reabertura: pré-preenche a ficha a partir de um registro existente =====
+    async function carregarRegistro(){
+        if(!PRE.id) return null;
+        try{
+            const arr=await (await fetch(WEBAPP_URL+'?t='+Date.now())).json();
+            if(Array.isArray(arr)) return arr.find(x=>String(x.Id||x.ID||x.id||'')===String(PRE.id))||null;
+        }catch(e){}
+        return null;
+    }
+    function preencherAnamnese(a){
+        if(!a) return;
+        Object.keys(a).forEach(function(k){
+            if(k==='condicoes'||k==='foco'||k==='tipoFicha') return;
+            var radios=document.querySelectorAll('#anamneseBox input[name="'+k+'"]');
+            if(radios.length){
+                radios.forEach(function(r){ r.checked=(r.value===a[k]); });
+                var row=document.getElementById(k+'QualRow'); if(row) row.style.display=(a[k]==='Sim')?'':'none';
+                return;
+            }
+            var el=document.getElementById(k); if(el && a[k]!=null) el.value=a[k];
+        });
+        ['condicoes','foco'].forEach(function(grp){
+            if(!a[grp]) return; var vals=String(a[grp]).split(',').map(s=>s.trim());
+            document.querySelectorAll('#anamneseBox input[name="'+grp+'"]').forEach(function(c){ if(vals.indexOf(c.value)>-1) c.checked=true; });
+        });
+    }
+    function preencherDe(r){
+        if(!r) return;
+        // contato
+        var metodo=(r.Contato||'WhatsApp').toString();
+        var radio=document.querySelector('input[name="contato"][value="'+(metodo==='Email'?'Email':'WhatsApp')+'"]');
+        if(radio){ radio.checked=true; toggleContato(); }
+        if(metodo==='Email'){ var e=document.getElementById('email'); if(e) e.value=r.Email||''; }
+        else {
+            var tel=(r.Telefone||'').toString().trim();
+            var mm=tel.match(/^(\+?\d{1,3})\s+(.*)$/);
+            if(mm){ var ddi=mm[1].replace('+',''); var dd=document.getElementById('ddi'); if(dd && [...dd.options].some(o=>o.value===ddi)) dd.value=ddi; var t=document.getElementById('telefone'); if(t) t.value=mm[2]; }
+            else { var t2=document.getElementById('telefone'); if(t2) t2.value=tel; }
+        }
+        // observações
+        var o=document.getElementById('obs'); if(o) o.value=r.Obs||'';
+        // serviços
+        var nomes=(r.Servico||'').toString().split(/;|\+/).map(s=>s.trim()).filter(Boolean);
+        nomes.forEach(function(n){
+            var id=n.replace(/[^a-z0-9]/gi,'');
+            var el=document.querySelector('.serv[data-id="'+id+'"]');
+            if(el && !el.classList.contains('sel')) selecionarServico(el);
+        });
+        // 2 pessoas
+        if((r.DuasPessoas||'')==='Sim'){ var c=document.getElementById('duasPessoas'); if(c){ c.checked=true; atualizarPreco(); } }
+        // anamnese (depois que renderAnamnese montou os campos)
+        var a={}; try{ a=JSON.parse(r.Anamnese||'{}'); }catch(e){}
+        preencherAnamnese(a);
+    }
+
     function mostrarFeedback(msg,tipo){ let f=document.getElementById('feedback'); f.textContent=msg; f.className='feedback '+tipo; setTimeout(()=>{f.className='feedback';},4500); }
 
     async function enviar(){
@@ -407,7 +479,7 @@
             obs: document.getElementById('obs')?.value||"",
             anamnese: JSON.stringify(coletarAnamnese())
         };
-        if(PRE.id){ dados.action='update'; dados.status='active'; }
+        if(PRE.id){ dados.action='update'; if(!REG || String(REG.Status||'').toLowerCase()==='aguardando_ficha') dados.status='active'; }
 
         mostrarFeedback("Enviando...","success");
         if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){
@@ -424,9 +496,20 @@
     function copiar(){ if(!servicosSel.length){ mostrarFeedback("Escolha uma experiência.","error"); return;} navigator.clipboard.writeText(montarResumo()); mostrarFeedback("Resumo copiado!","success"); }
 
     document.getElementById('enviarBtnBar').addEventListener('click',enviar);
-    document.getElementById('novaBtn').addEventListener('click',()=>{ document.getElementById('sucessoOverlay').classList.remove('show'); servicosSel=[]; renderForm(); window.scrollTo({top:0,behavior:'smooth'}); });
+    document.getElementById('novaBtn').addEventListener('click',()=>{ document.getElementById('sucessoOverlay').classList.remove('show'); servicosSel=[]; REG=null; PRE.id=''; renderForm(); window.scrollTo({top:0,behavior:'smooth'}); });
 
-    renderForm();
+    async function iniciar(){
+        REG = await carregarRegistro();
+        if(REG){
+            PRE.nome = PRE.nome || REG.Nome || '';
+            PRE.quarto = PRE.quarto || REG.Quarto || '';
+            PRE.data = PRE.data || (REG.Data||'').toString().slice(0,10);
+            if(!PRE.hora){ var m=String(REG.Horario||'').match(/(\d{1,2}):(\d{2})/); PRE.hora = m?(m[1].padStart(2,'0')+':'+m[2]):''; }
+        }
+        renderForm();
+        if(REG) preencherDe(REG);
+    }
+    iniciar();
 
     if('serviceWorker' in navigator){
         navigator.serviceWorker.register('sw.js').then(function(r){ if(r.waiting)r.waiting.postMessage('skipWaiting'); setInterval(function(){ r.update(); }, 30*60*1000); }).catch(function(){});

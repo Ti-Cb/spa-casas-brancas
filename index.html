@@ -328,6 +328,7 @@
             <div class="form-row"><label class="chk"><input type="checkbox" id="aceite"> Li e concordo com as informações e políticas do SPA.</label></div>
             <div class="btn-group">
                 <button type="button" class="btn-submit" id="enviarBtn">${temPre?'Enviar ficha':'Enviar solicitação'}</button>
+                <button type="button" class="btn-copy" id="imprimirBtn">🖨️ Imprimir ficha</button>
                 <button type="button" class="btn-copy" id="copiarBtn">Copiar resumo</button>
             </div>
             <div id="feedback" class="feedback"></div>
@@ -342,6 +343,7 @@
         document.getElementById('duasPessoas')?.addEventListener('change',atualizarPreco);
         document.getElementById('enviarBtn').addEventListener('click',enviar);
         document.getElementById('copiarBtn').addEventListener('click',copiar);
+        document.getElementById('imprimirBtn').addEventListener('click',imprimirFicha);
         toggleContato();
         togglePerfil();
     }
@@ -494,6 +496,77 @@
         document.getElementById('sucessoOverlay').classList.add('show');
     }
     function copiar(){ if(!servicosSel.length){ mostrarFeedback("Escolha uma experiência.","error"); return;} navigator.clipboard.writeText(montarResumo()); mostrarFeedback("Resumo copiado!","success"); }
+
+    // ===== Imprimir ficha (dados preenchidos até o momento + anamnese; resto em branco p/ preencher à mão) =====
+    function fichaImpressaAnamnese(){
+        var box=document.getElementById('anamneseBox'); if(!box) return '';
+        var out='';
+        box.querySelectorAll('.form-row').forEach(function(row){
+            if(row.offsetParent===null) return; // ignora campos ocultos (ex.: "Qual?" quando "Não")
+            var lab=row.querySelector('label'); var labelTxt=lab?lab.textContent.trim():'';
+            var radios=row.querySelectorAll('input[type="radio"]');
+            var checks=row.querySelectorAll('input[type="checkbox"]');
+            var sel=row.querySelector('select');
+            var texts=row.querySelectorAll('input[type="text"]');
+            if(radios.length){
+                var checked=row.querySelector('input[type="radio"]:checked');
+                var vals=[]; radios.forEach(function(r){ if(vals.indexOf(r.value)<0) vals.push(r.value); });
+                var opts=vals.map(function(v){ var c=checked&&checked.value===v; return '('+(c?'X':'&nbsp;&nbsp;')+') '+v; }).join('&nbsp;&nbsp;&nbsp;');
+                out+='<div class="q"><b>'+labelTxt+'</b> &nbsp; '+opts+'</div>';
+            } else if(checks.length){
+                var items=Array.prototype.map.call(checks,function(c){ return '['+(c.checked?'X':'&nbsp;&nbsp;')+'] '+c.value; }).join(' &nbsp; ');
+                out+='<div class="q"><b>'+labelTxt+'</b><div style="margin-top:3px;line-height:1.9;">'+items+'</div></div>';
+            } else if(sel){
+                out+='<div class="q"><b>'+labelTxt+':</b> '+(sel.value? sel.value : '<span class="bl"></span>')+'</div>';
+            } else if(texts.length){
+                out+='<div class="q"><b>'+labelTxt+':</b> '+(texts[0].value? texts[0].value : '<span class="bl"></span>')+'</div>';
+            } else {
+                out+='<div class="q"><b>'+labelTxt+'</b></div>';
+            }
+        });
+        return out;
+    }
+    function imprimirFicha(){
+        var serv=servicosSel.length?servicosSel.map(function(s){return s.nome+' ('+s.dur+'min)';}).join(' + '):'';
+        var metodo=metodoContato(); var contato=metodo==='Email'?(getEmail()||''):(getTel().display||'');
+        var obs=document.getElementById('obs')?document.getElementById('obs').value:'';
+        function L(rot,val){ return '<tr><td class="r">'+rot+'</td><td>'+(val?val:'<span class="bl"></span>')+'</td></tr>'; }
+        var html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Ficha — SPA Casas Brancas</title><style>'+
+            'body{font-family:Arial,sans-serif;color:#2b2a26;padding:24px;max-width:760px;margin:0 auto;}'+
+            'h1{color:#51604a;font-size:1.35rem;font-family:Georgia,serif;font-style:italic;margin-bottom:2px;}'+
+            '.sub{color:#8a937e;font-size:0.8rem;margin-bottom:16px;}'+
+            'table{width:100%;border-collapse:collapse;margin-bottom:8px;}'+
+            'td{padding:6px;border-bottom:1px solid #eee;font-size:0.9rem;vertical-align:top;}'+
+            'td.r{color:#6b7560;width:34%;}'+
+            '.bl{display:inline-block;border-bottom:1px solid #999;min-width:55%;}'+
+            'h3{color:#51604a;font-size:0.98rem;margin:16px 0 6px;border-bottom:1px solid #d8e0cf;padding-bottom:3px;}'+
+            '.q{font-size:0.9rem;margin:8px 0;}'+
+            '.assin{margin-top:40px;display:flex;gap:34px;}'+
+            '.assin div{flex:1;border-top:1px solid #555;padding-top:4px;font-size:0.78rem;color:#555;text-align:center;}'+
+            '@media print{.np{display:none;}}'+
+            '</style></head><body>'+
+            '<h1>Casas Brancas Spa — Ficha do Hóspede</h1>'+
+            '<div class="sub">Os campos em branco podem ser preenchidos à mão. Em seguida, a recepção completa no sistema.</div>'+
+            '<table>'+
+                L('Nome', getNome())+
+                L('Quarto / Reserva', ehVisitante()?'Visitante':getQuarto())+
+                L('Contato', contato)+
+                L('Data', fmtData(getData()))+
+                L('Horário', getHora())+
+                L('Experiência(s)', serv)+
+                L('Duração total', servicosSel.length?(totalDuracao()+' min'):'')+
+                L('Valor estimado', servicosSel.length?brl(valorTotal()):'')+
+                L('Observações', obs)+
+            '</table>'+
+            '<h3>Ficha de anamnese</h3>'+ (fichaImpressaAnamnese() || '<div class="q">Selecione a experiência no formulário para carregar a anamnese antes de imprimir.</div>') +
+            '<div class="q" style="margin-top:14px;"><b>Outras observações do hóspede:</b><br><span class="bl" style="min-width:100%;"></span><br><br><span class="bl" style="min-width:100%;"></span></div>'+
+            '<div class="assin"><div>Assinatura do hóspede</div><div>Data</div></div>'+
+            '<button class="np" onclick="window.print()" style="margin-top:18px;padding:10px 20px;background:#51604a;color:#fff;border:none;border-radius:8px;cursor:pointer;">Imprimir / Salvar PDF</button>'+
+            '<scr'+'ipt>setTimeout(function(){window.print();},400);<\/scr'+'ipt>'+
+            '</body></html>';
+        var w=window.open('','_blank'); if(!w){ mostrarFeedback('Permita pop-ups para imprimir a ficha.','error'); return; }
+        w.document.write(html); w.document.close();
+    }
 
     document.getElementById('enviarBtnBar').addEventListener('click',enviar);
     document.getElementById('novaBtn').addEventListener('click',()=>{ document.getElementById('sucessoOverlay').classList.remove('show'); servicosSel=[]; REG=null; PRE.id=''; renderForm(); window.scrollTo({top:0,behavior:'smooth'}); });

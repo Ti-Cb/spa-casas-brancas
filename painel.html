@@ -199,6 +199,15 @@
     <div class="ov-acoes"><button style="background:linear-gradient(135deg,var(--sage),var(--sage-d));color:#fff;" id="anamFechar">Fechar</button></div>
 </div></div>
 
+<div class="ov" id="confirmOv"><div class="ov-card" style="max-width:380px;text-align:center;">
+    <div style="font-size:2rem;">❓</div>
+    <h3 id="confirmMsg" style="color:var(--sage-d);margin:8px 0 4px;">Tem certeza?</h3>
+    <div class="ov-acoes">
+        <button style="background:transparent;color:#6b7560;border:1px solid #cfd4c4 !important;" id="confirmNao">Não</button>
+        <button style="background:linear-gradient(135deg,var(--sage),var(--sage-d));color:#fff;" id="confirmSim">Sim</button>
+    </div>
+</div></div>
+
 <script>
     const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxOhd-rs25ko1Xkd46A1EKWM7npWBg3rfKigW41XY6Kvdi9wvXCu2PjsVV5w5RNhole/exec";
     const SPA_WHATSAPP = "5522997909544";
@@ -315,11 +324,12 @@
                     <td>${t["Sala"]||'-'}</td><td>${brl(t["ValorTotal"])}</td>
                     <td style="white-space:nowrap;">
                         <button class="btn btn-ficha" data-act="ficha" data-id="${_id}">Ficha</button>
-                        <button class="btn btn-ficha" data-act="fichaEdit" data-id="${_id}" ${isCanc(t)?'disabled':''}>Ficha ✎</button>
-                        <button class="btn btn-edit" data-act="edit" data-id="${_id}" ${isCanc(t)?'disabled':''}>Editar</button>
-                        <button class="btn btn-wa" data-act="confirmar" data-id="${_id}" ${dis?'disabled':''}>Confirmar</button>
-                        <button class="btn btn-fim" data-act="completed" data-id="${_id}" ${dis?'disabled':''}>Finalizar</button>
-                        <button class="btn btn-canc" data-act="cancelled" data-id="${_id}" ${isCanc(t)?'disabled':''}>Cancelar</button>
+                        <button class="btn btn-ficha" data-act="fichaEdit" data-id="${_id}">Ficha ✎</button>
+                        <button class="btn btn-edit" data-act="edit" data-id="${_id}">Editar</button>
+                        <button class="btn btn-wa" data-act="avisar" data-id="${_id}">📲 Avisar</button>
+                        <button class="btn" style="background:${s==='confirmed'?'#9c8763':'#51604a'};color:#fff;" data-act="toggleConf" data-id="${_id}">${s==='confirmed'?'↺ Desconfirmar':'✓ Confirmar'}</button>
+                        <button class="btn btn-fim" data-act="toggleFim" data-id="${_id}">${s==='completed'?'↺ Reabrir':'Finalizar'}</button>
+                        <button class="btn btn-canc" data-act="toggleCanc" data-id="${_id}">${s==='cancelled'?'↺ Reativar':'Cancelar'}</button>
                     </td></tr>`;
             });
         }
@@ -330,13 +340,21 @@
             if(a==='ficha')verFicha(t);
             else if(a==='fichaEdit') window.open(FICHA_URL+'?id='+encodeURIComponent(idOf(t)),'_blank');
             else if(a==='edit')abrirEdit(t);
-            else if(a==='confirmar')confirmar(t);
-            else if(a==='completed')marcar(t,'completed');
-            else if(a==='cancelled')marcar(t,'cancelled');
+            else if(a==='avisar')confirmar(t);
+            else if(a==='toggleConf'){ let c=getStatus(t); if(c==='confirmed') mudarStatus(t,'active','Desconfirmar este atendimento? Ele volta para "Solicitado".'); else mudarStatus(t,'confirmed','Confirmar este atendimento?'); }
+            else if(a==='toggleFim'){ let c=getStatus(t); if(c==='completed') mudarStatus(t,'confirmed','Reabrir este atendimento finalizado? Ele deixa de contar como concluído.'); else mudarStatus(t,'completed','Marcar este atendimento como FINALIZADO?'); }
+            else if(a==='toggleCanc'){ let c=getStatus(t); if(c==='cancelled') mudarStatus(t,'confirmed','Reativar este atendimento cancelado?'); else mudarStatus(t,'cancelled','CANCELAR este atendimento?'); }
         }));
     }
 
     function marcar(t,st){ t["Status"]=st; post(idOf(t),{status:st}); renderLista(); renderProximos(); renderConflitos(); renderFinanceiro(periodo); }
+    // Troca de status com confirmação (reversível)
+    function mudarStatus(t,novo,msg){ pedirConfirmacao(msg,function(){ t["Status"]=novo; post(idOf(t),{status:novo}); renderLista(); renderProximos(); renderConflitos(); renderFinanceiro(periodo); }); }
+    // Caixa de diálogo "Tem certeza?"
+    let _confirmCb=null;
+    function pedirConfirmacao(msg,cb){ document.getElementById('confirmMsg').innerText=msg||'Tem certeza?'; _confirmCb=cb; document.getElementById('confirmOv').classList.add('show'); }
+    document.getElementById('confirmNao').addEventListener('click',function(){ _confirmCb=null; document.getElementById('confirmOv').classList.remove('show'); });
+    document.getElementById('confirmSim').addEventListener('click',function(){ var cb=_confirmCb; _confirmCb=null; document.getElementById('confirmOv').classList.remove('show'); if(cb)cb(); });
 
     function confirmar(t){
         let data=fData(t["Data"]), h=hora(t);
@@ -495,28 +513,4 @@
     document.getElementById('eCancelar').addEventListener('click',()=>document.getElementById('editOv').classList.remove('show'));
     document.getElementById('eSalvar').addEventListener('click',salvarEdit);
     document.getElementById('eServico').addEventListener('input',function(){ var d=durDeServico(this.value); if(d) document.getElementById('eDuracao').value=d; });
-    document.getElementById('anamFechar').addEventListener('click',()=>document.getElementById('anamOv').classList.remove('show'));
-    document.getElementById('autoRefresh').addEventListener('change',()=>{ if(autoTimer){clearInterval(autoTimer);autoTimer=null;} if(document.getElementById('autoRefresh').checked)autoTimer=setInterval(carregar,5*60*1000); });
-
-    // ===== NOVO AGENDAMENTO (recepção gera a ficha pré-preenchida) =====
-    document.getElementById('novoBtn').addEventListener('click',()=>{
-        document.getElementById('linkBox').style.display='none';
-        ['novoNome','novoQuarto','novoSala'].forEach(id=>document.getElementById(id).value='');
-        document.getElementById('novoTer').value='';
-        document.getElementById('novoData').value=new Date().toISOString().slice(0,10);
-        document.getElementById('novoHora').value='14:30';
-        document.getElementById('novoOv').classList.add('show');
-    });
-    document.getElementById('novoFechar').addEventListener('click',()=>document.getElementById('novoOv').classList.remove('show'));
-    document.getElementById('novoGerar').addEventListener('click',()=>{
-        let data=document.getElementById('novoData').value, hora=document.getElementById('novoHora').value.trim();
-        let nome=document.getElementById('novoNome').value.trim(), quarto=document.getElementById('novoQuarto').value.trim();
-        let ter=document.getElementById('novoTer').value, sala=document.getElementById('novoSala').value.trim();
-        if(!data||!hora||!nome){ alert('Preencha data, horário e nome.'); return; }
-        let id=Date.now();
-        if(WEBAPP_URL.indexOf('COLE_AQUI')===-1){
-            try{ fetch(WEBAPP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,nome:nome,quarto:quarto,data:data,horario:hora,terapeuta:ter,sala:sala,status:'aguardando_ficha'})}); }catch(e){}
-        }
-        let rel=FICHA_URL+'?id='+id+'&nome='+encodeURIComponent(nome)+'&quarto='+encodeURIComponent(quarto)+'&data='+data+'&hora='+encodeURIComponent(hora);
-        let link=new URL(rel, location.href).href;
-        document.getElementById('li
+    document.getElement

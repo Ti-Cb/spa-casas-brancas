@@ -311,7 +311,7 @@
                 html+=`<tr class="${rc}">
                     <td>${fData(t["Data"])}</td><td><b>${hora(t)}</b></td><td>${t["Nome"]||'-'}</td>
                     <td>${t["Quarto"]||'-'}</td><td>${t["Servico"]||'-'}${t["DuasPessoas"]==='Sim'?' <span class="tag" style="color:#51604a;background:#eef3e6;">2p</span>':''}</td>
-                    <td>${t["Duracao"]||'-'}min</td><td>${t["Terapeuta"]||'<span style="color:#b08;">(definir)</span>'}${t["RespTerapeuta"]?'<br><span style="font-size:0.66rem;'+(/recus/i.test(t["RespTerapeuta"])?'color:#b85c5a;':'color:#2f7d8c;')+'">'+(/recus/i.test(t["RespTerapeuta"])?'✗ recusou':'✓ confirmou')+'</span>':''}</td>
+                    <td>${(function(){var d=parseInt(t["Duracao"])||durDeServico(t["Servico"]); return d?(d+' min'):'-';})()}</td><td>${t["Terapeuta"]||'<span style="color:#b08;">(definir)</span>'}${t["RespTerapeuta"]?'<br><span style="font-size:0.66rem;'+(/recus/i.test(t["RespTerapeuta"])?'color:#b85c5a;':'color:#2f7d8c;')+'">'+(/recus/i.test(t["RespTerapeuta"])?'✗ recusou':'✓ confirmou')+'</span>':''}</td>
                     <td>${t["Sala"]||'-'}</td><td>${brl(t["ValorTotal"])}</td>
                     <td style="white-space:nowrap;">
                         <button class="btn btn-ficha" data-act="ficha" data-id="${_id}">Ficha</button>
@@ -369,6 +369,15 @@
         document.getElementById('anamOv').classList.add('show');
     }
 
+    // Duração padrão por tratamento (min) — para preencher quando o registro não traz a duração
+    const DURACOES={ 'casasbrancasblend':50,'casasbrancasfluidity':60,'yogabodyrelax':180,'deeptissue':50,'sueca':50,'swedish':50,'pedrasquentes':50,'hotstone':50,'aromaterapia':50,'aromatherapy':50,'peacefulpregnancy':50,'pregnancy':50,'backritual':30,'pesepernas':30,'feetandlegs':30,'feetlegs':30,'maoscabecaecervical':30,'handsheadandneck':30,'handsheadneck':30,'soundhealing':50,'ritualdosometoque':60,'esfoliacaoehidratacao':60,'drenagemlinfatica':50,'lymphaticdrainage':50,'tratamentomodelador':50,'limpezafacial':60,'facialcleansing':60,'ritualvitalite':50,'yogafacialrestore':160,'yoga':50 };
+    function _normServ(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }
+    function durDeServico(servico){
+        if(!servico) return 0;
+        var partes=String(servico).split(/;|\+/).map(x=>x.trim()).filter(Boolean), total=0;
+        partes.forEach(function(p){ var n=_normServ(p), best=0; Object.keys(DURACOES).forEach(function(k){ if(n.indexOf(k)>-1) best=Math.max(best,DURACOES[k]); }); total+=best; });
+        return total;
+    }
     function abrirEdit(t){
         editando=t;
         document.getElementById('editResumo').innerText=(editando["Nome"]||'-')+' · '+(editando["Servico"]||'-');
@@ -378,7 +387,7 @@
         document.getElementById('eMetodo').value=metodo;
         document.getElementById('eContato').value=(metodo==='Email'?(editando["Email"]||''):(editando["Telefone"]||''));
         document.getElementById('eServico').value=editando["Servico"]||'';
-        var dd=parseInt(editando["Duracao"]); document.getElementById('eDuracao').value=isNaN(dd)?'':dd;
+        var dd=parseInt(editando["Duracao"]); if(isNaN(dd)||!dd) dd=durDeServico(editando["Servico"]); document.getElementById('eDuracao').value=dd||'';
         document.getElementById('eData').value=(editando["Data"]||'').toString().slice(0,10);
         document.getElementById('eHora').value=hora(editando)==='-'?'':hora(editando);
         document.getElementById('eTer').value=editando["Terapeuta"]||'';
@@ -485,6 +494,7 @@
     document.getElementById('limparBtn').addEventListener('click',()=>{ document.getElementById('fBusca').value=''; document.getElementById('fData').value=''; document.getElementById('fStatus').value='todos'; document.getElementById('fTerapeuta').value='todos'; renderLista(); });
     document.getElementById('eCancelar').addEventListener('click',()=>document.getElementById('editOv').classList.remove('show'));
     document.getElementById('eSalvar').addEventListener('click',salvarEdit);
+    document.getElementById('eServico').addEventListener('input',function(){ var d=durDeServico(this.value); if(d) document.getElementById('eDuracao').value=d; });
     document.getElementById('anamFechar').addEventListener('click',()=>document.getElementById('anamOv').classList.remove('show'));
     document.getElementById('autoRefresh').addEventListener('change',()=>{ if(autoTimer){clearInterval(autoTimer);autoTimer=null;} if(document.getElementById('autoRefresh').checked)autoTimer=setInterval(carregar,5*60*1000); });
 
@@ -509,25 +519,4 @@
         }
         let rel=FICHA_URL+'?id='+id+'&nome='+encodeURIComponent(nome)+'&quarto='+encodeURIComponent(quarto)+'&data='+data+'&hora='+encodeURIComponent(hora);
         let link=new URL(rel, location.href).href;
-        document.getElementById('linkInput').value=link;
-        document.getElementById('linkBox').style.display='block';
-        let qb=document.getElementById('qrBox'); qb.innerHTML='';
-        try{ new QRCode(qb,{text:link,width:170,height:170,correctLevel:QRCode.CorrectLevel.M}); }
-        catch(e){ qb.innerHTML='<img alt="QR" src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data='+encodeURIComponent(link)+'">'; }
-        setTimeout(carregar,1500);
-    });
-    document.getElementById('copiarLink').addEventListener('click',()=>{ let i=document.getElementById('linkInput'); i.select(); try{navigator.clipboard.writeText(i.value);}catch(e){} });
-    document.getElementById('abrirLink').addEventListener('click',()=>{ window.open(document.getElementById('linkInput').value,'_blank'); });
-
-    autoTimer=setInterval(carregar,5*60*1000);
-    setInterval(renderAvisos,60*1000);
-    carregar();
-
-    if('serviceWorker' in navigator){
-        navigator.serviceWorker.register('sw.js').then(function(r){ if(r.waiting)r.waiting.postMessage('skipWaiting'); setInterval(function(){ r.update(); }, 30*60*1000); }).catch(function(){});
-        var _rl=false; navigator.serviceWorker.addEventListener('controllerchange', function(){ if(_rl)return; _rl=true; location.reload(); });
-        document.addEventListener('visibilitychange', function(){ if(!document.hidden && navigator.serviceWorker.controller){ navigator.serviceWorker.getRegistration().then(function(r){ if(r)r.update(); }); } });
-    }
-</script>
-</body>
-</html>
+        document.getElementById('li

@@ -179,7 +179,8 @@
     function pedirPermissaoNotif(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
     function notificarDesktop(titulo,corpo){ try{ if('Notification' in window && Notification.permission==='granted') new Notification(titulo,{ body:corpo, icon:'icon-spa-192.png' }); }catch(e){} }
 
-    var pipWin=null, ultimaHoje=[];
+    var pipWin=null, ultimaHoje=[], ultimaAmanha=[];
+    const PIP_SLOTS=["14:30","16:00","17:30","19:00"];
     function pipDisponivel(){ return ('documentPictureInPicture' in window); }
     async function abrirPiP(){
         if(!pipDisponivel()){ alert('A janela flutuante funciona no Chrome ou Edge no computador.'); return; }
@@ -187,18 +188,29 @@
             pipWin=await documentPictureInPicture.requestWindow({ width:340, height:460 });
             pipWin.addEventListener('pagehide',function(){ pipWin=null; try{ window.focus(); }catch(e){} });
             var s=pipWin.document.createElement('style');
-            s.textContent='body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#eef0e8;color:#34362f;} .h{background:#51604a;color:#fff;padding:12px 14px;} .h b{color:#cdd7c0;font-style:italic;} .sub{font-size:0.7rem;letter-spacing:1px;color:#cdd7c0;} .it{padding:9px 12px;border-bottom:1px solid #dfe5d6;font-size:0.9rem;} .hr{color:#51604a;font-weight:700;} .vz{padding:18px;text-align:center;color:#8a937e;font-size:0.85rem;}';
+            s.textContent='body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#eef0e8;color:#34362f;} .h{background:#51604a;color:#fff;padding:12px 14px;} .h b{color:#cdd7c0;font-style:italic;} .sub{font-size:0.7rem;letter-spacing:1px;color:#cdd7c0;} .h2{background:#dfe5d6;color:#51604a;font-weight:700;padding:7px 12px;font-size:0.82rem;} .it{padding:9px 12px;border-bottom:1px solid #dfe5d6;font-size:0.9rem;} .hr{color:#51604a;font-weight:700;} .livre{padding:8px 12px;font-size:0.8rem;color:#3f7d4f;border-bottom:1px solid #dfe5d6;background:#f3f8ef;} .vz{padding:12px;text-align:center;color:#8a937e;font-size:0.82rem;}';
             pipWin.document.head.appendChild(s);
-            pipWin.document.body.innerHTML='<div class="h"><div><b>Casas Brancas Spa</b></div><div class="sub">ATENDIMENTOS DE HOJE</div></div><div id="pipBody"></div>';
+            pipWin.document.body.innerHTML='<div class="h"><div><b>Casas Brancas Spa</b></div><div class="sub">AGENDA — HOJE E AMANHÃ</div></div><div id="pipBody"></div>';
             atualizarPiP();
             try{ pipWin.focus(); }catch(e){} try{ window.blur(); }catch(e){}
         }catch(e){ alert('Não foi possível abrir a janela flutuante.'); }
     }
+    function _ddmm(d){ return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }
+    function _pipDia(titulo, dataObj, arr){
+        var h='<div class="h2">'+titulo+' ('+_ddmm(dataObj)+') · '+arr.length+'</div>';
+        if(arr.length){
+            h+=arr.map(function(t){ return '<div class="it"><span class="hr">'+hora(t)+'</span> · '+(t["Nome"]||'-')+'<br><span style="font-size:0.76rem;color:#8a937e;">'+(t["Servico"]||'-')+' · '+(t["Terapeuta"]||'a definir')+'</span></div>'; }).join('');
+        } else { h+='<div class="vz">Nenhum atendimento.</div>'; }
+        var ocup={}; arr.forEach(function(t){ ocup[hora(t)]=1; });
+        var livres=PIP_SLOTS.filter(function(s){ return !ocup[s]; });
+        h+='<div class="livre">🟢 Horários livres: '+(livres.length?livres.join(', '):'nenhum')+'</div>';
+        return h;
+    }
     function atualizarPiP(){
         if(!pipWin||pipWin.closed) return;
         var body=pipWin.document.getElementById('pipBody'); if(!body) return;
-        if(!ultimaHoje.length){ body.innerHTML='<div class="vz">Nenhum atendimento para hoje.</div>'; return; }
-        body.innerHTML=ultimaHoje.map(function(t){ return '<div class="it"><span class="hr">'+hora(t)+'</span> · '+(t["Nome"]||'-')+'<br><span style="font-size:0.78rem;color:#8a937e;">'+(t["Servico"]||'-')+' · '+(t["Terapeuta"]||'a definir')+'</span></div>'; }).join('');
+        var am=new Date(agora); am.setDate(am.getDate()+1);
+        body.innerHTML=_pipDia('Hoje', agora, ultimaHoje)+_pipDia('Amanhã', am, ultimaAmanha);
     }
     function pipNovo(nome){ if(pipWin&&!pipWin.closed){ try{ var d=pipWin.document.getElementById('pipBody'); if(d){ var a=pipWin.document.createElement('div'); a.className='it'; a.style.background='#fff8e6'; a.innerHTML='🔔 <b>Nova reserva:</b> '+(nome||''); d.insertBefore(a,d.firstChild); } }catch(e){} } }
 
@@ -227,7 +239,7 @@
             const hojeK = keyOf(agora); const am=new Date(); am.setDate(am.getDate()+1); const amK=keyOf(am);
             const doDia = k => ativos.filter(t=>dKey(t["Data"])===k).sort((a,b)=>hora(a).localeCompare(hora(b)));
             const hoje=doDia(hojeK), amanha=doDia(amK);
-            ultimaHoje=hoje; atualizarPiP();
+            ultimaHoje=hoje; ultimaAmanha=amanha; atualizarPiP();
             if(!window.__spaBoot){ window.__spaBoot=true; pedirPermissaoNotif(); showToast('💆 Atendimentos de hoje: '+hoje.length, hoje.length?'Toque para ver no painel.':'Nenhum para hoje.', { onClick:function(){ location.href='painel.html'; }, duracao:7000 }); }
 
             document.getElementById('listaHoje').innerHTML = listaDia(hoje);

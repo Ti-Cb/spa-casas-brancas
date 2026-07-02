@@ -181,17 +181,19 @@
 
     var pipWin=null, ultimaHoje=[], ultimaAmanha=[];
     const PIP_SLOTS=["14:30","16:00","17:30","19:00"];
+    const TRANSFER_URL_PIP="https://script.google.com/macros/s/AKfycbxCySxE0y7k6430bbRTV8VUiOsiymPIyUEXcNnS7_RAfC3VPajMwlubbT59_QVD3QiQ/exec";
+    var traHoje=[], traAmanha=[];
     function pipDisponivel(){ return ('documentPictureInPicture' in window); }
     async function abrirPiP(){
         if(!pipDisponivel()){ alert('A janela flutuante funciona no Chrome ou Edge no computador.'); return; }
         try{
-            pipWin=await documentPictureInPicture.requestWindow({ width:340, height:460 });
+            pipWin=await documentPictureInPicture.requestWindow({ width:340, height:560 });
             pipWin.addEventListener('pagehide',function(){ pipWin=null; try{ window.focus(); }catch(e){} });
             var s=pipWin.document.createElement('style');
-            s.textContent='body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#eef0e8;color:#34362f;} .h{background:#51604a;color:#fff;padding:12px 14px;} .h b{color:#cdd7c0;font-style:italic;} .sub{font-size:0.7rem;letter-spacing:1px;color:#cdd7c0;} .h2{background:#dfe5d6;color:#51604a;font-weight:700;padding:7px 12px;font-size:0.82rem;} .it{padding:9px 12px;border-bottom:1px solid #dfe5d6;font-size:0.9rem;} .hr{color:#51604a;font-weight:700;} .livre{padding:8px 12px;font-size:0.8rem;color:#3f7d4f;border-bottom:1px solid #dfe5d6;background:#f3f8ef;} .vz{padding:12px;text-align:center;color:#8a937e;font-size:0.82rem;}';
+            s.textContent='body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#eef0e8;color:#34362f;} .h{background:#51604a;color:#fff;padding:12px 14px;} .h b{color:#cdd7c0;font-style:italic;} .sub{font-size:0.7rem;letter-spacing:1px;color:#cdd7c0;} .h2{background:#dfe5d6;color:#51604a;font-weight:700;padding:7px 12px;font-size:0.82rem;} .it{padding:9px 12px;border-bottom:1px solid #dfe5d6;font-size:0.9rem;} .hr{color:#51604a;font-weight:700;} .livre{padding:8px 12px;font-size:0.8rem;color:#3f7d4f;border-bottom:1px solid #dfe5d6;background:#f3f8ef;} .sec{background:#51604a;color:#cdd7c0;padding:6px 12px;font-size:0.72rem;letter-spacing:1.5px;font-weight:700;} .vz{padding:10px;text-align:center;color:#8a937e;font-size:0.8rem;}';
             pipWin.document.head.appendChild(s);
-            pipWin.document.body.innerHTML='<div class="h"><div><b>Casas Brancas Spa</b></div><div class="sub">AGENDA — HOJE E AMANHÃ</div></div><div id="pipBody"></div>';
-            atualizarPiP();
+            pipWin.document.body.innerHTML='<div class="h"><div><b>Casas Brancas</b></div><div class="sub">RECEPÇÃO — HOJE E AMANHÃ</div></div><div id="pipBody"></div>';
+            atualizarPiP(); carregarTraPiP();
             try{ pipWin.focus(); }catch(e){} try{ window.blur(); }catch(e){}
         }catch(e){ alert('Não foi possível abrir a janela flutuante.'); }
     }
@@ -206,11 +208,31 @@
         h+='<div class="livre">🟢 Horários livres: '+(livres.length?livres.join(', '):'nenhum')+'</div>';
         return h;
     }
+    function _pipDiaTra(titulo, dataObj, arr){
+        var h='<div class="h2">'+titulo+' ('+_ddmm(dataObj)+') · '+arr.length+'</div>';
+        if(arr.length){
+            h+=arr.map(function(t){ var sent=t["Sentido"]==="IN"?"Rio→Búzios":"Búzios→Rio"; return '<div class="it"><span class="hr">'+hora(t)+'</span> · '+(t["Nome"]||'-')+'<br><span style="font-size:0.76rem;color:#8a937e;">'+sent+' · '+(t["Veículo"]||'-')+' · '+(t["Motorista"]||'sem motorista')+'</span></div>'; }).join('');
+        } else { h+='<div class="vz">Nenhum traslado.</div>'; }
+        return h;
+    }
+    async function carregarTraPiP(){
+        try{
+            var arr=await (await fetch(TRANSFER_URL_PIP)).json();
+            if(!Array.isArray(arr)) return;
+            var at=arr.filter(function(t){ return (t["Status"]||'').toString().toLowerCase()!=='cancelled'; });
+            var hk=keyOf(agora); var am=new Date(agora); am.setDate(am.getDate()+1); var ak=keyOf(am);
+            traHoje=at.filter(function(t){ return dKey(t["Data Viagem"])===hk; }).sort(function(a,b){ return hora(a).localeCompare(hora(b)); });
+            traAmanha=at.filter(function(t){ return dKey(t["Data Viagem"])===ak; }).sort(function(a,b){ return hora(a).localeCompare(hora(b)); });
+            atualizarPiP();
+        }catch(e){}
+    }
     function atualizarPiP(){
         if(!pipWin||pipWin.closed) return;
         var body=pipWin.document.getElementById('pipBody'); if(!body) return;
         var am=new Date(agora); am.setDate(am.getDate()+1);
-        body.innerHTML=_pipDia('Hoje', agora, ultimaHoje)+_pipDia('Amanhã', am, ultimaAmanha);
+        body.innerHTML=
+            '<div class="sec">💆 SPA</div>'+_pipDia('Hoje', agora, ultimaHoje)+_pipDia('Amanhã', am, ultimaAmanha)+
+            '<div class="sec">🚗 TRASLADOS</div>'+_pipDiaTra('Hoje', agora, traHoje)+_pipDiaTra('Amanhã', am, traAmanha);
     }
     function pipNovo(nome){ if(pipWin&&!pipWin.closed){ try{ var d=pipWin.document.getElementById('pipBody'); if(d){ var a=pipWin.document.createElement('div'); a.className='it'; a.style.background='#fff8e6'; a.innerHTML='🔔 <b>Nova reserva:</b> '+(nome||''); d.insertBefore(a,d.firstChild); } }catch(e){} } }
 
@@ -239,7 +261,7 @@
             const hojeK = keyOf(agora); const am=new Date(); am.setDate(am.getDate()+1); const amK=keyOf(am);
             const doDia = k => ativos.filter(t=>dKey(t["Data"])===k).sort((a,b)=>hora(a).localeCompare(hora(b)));
             const hoje=doDia(hojeK), amanha=doDia(amK);
-            ultimaHoje=hoje; ultimaAmanha=amanha; atualizarPiP();
+            ultimaHoje=hoje; ultimaAmanha=amanha; atualizarPiP(); if(pipWin&&!pipWin.closed) carregarTraPiP();
             if(!window.__spaBoot){ window.__spaBoot=true; pedirPermissaoNotif(); showToast('💆 Atendimentos de hoje: '+hoje.length, hoje.length?'Toque para ver no painel.':'Nenhum para hoje.', { onClick:function(){ location.href='painel.html'; }, duracao:7000 }); }
 
             document.getElementById('listaHoje').innerHTML = listaDia(hoje);
